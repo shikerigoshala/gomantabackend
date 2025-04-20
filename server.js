@@ -19,7 +19,7 @@ app.use(cookieParser());
 // Configure CORS
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production'
-    ? ['https://donate.gomantakgausevak.com', 'https://www.donate.gomantakgausevak.com']
+    ? ['https://donate.gomantakgausevak.com', 'https://www.donate.gomantakgausevak.com', 'https://gomantakgausevak.vercel.app']
     : 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],

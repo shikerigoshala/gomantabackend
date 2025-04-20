@@ -1,4 +1,4 @@
-const { razorpay, currency, webhook_secret } = require('../config/razorpay');
+const { getRazorpay, currency, webhook_secret } = require('../config/razorpay');
 const crypto = require('crypto');
 const { donationService } = require('./supabase');
 
@@ -20,6 +20,8 @@ async function createOrder(amount, donationId, notes = {}) {
   };
 
   try {
+    // Get Razorpay instance using the lazy-loading function
+    const razorpay = getRazorpay();
     const response = await razorpay.orders.create(options);
     console.log('Razorpay order created:', response);
     
@@ -42,6 +44,7 @@ async function createOrder(amount, donationId, notes = {}) {
 
 async function verifyPayment(paymentId) {
   try {
+    const razorpay = getRazorpay();
     const payment = await razorpay.payments.fetch(paymentId);
     return {
       success: payment.status === 'captured',
@@ -54,12 +57,24 @@ async function verifyPayment(paymentId) {
 }
 
 function validateWebhookSignature(body, signature) {
-  const expectedSignature = crypto
-    .createHmac('sha256', webhook_secret)
-    .update(JSON.stringify(body))
-    .digest('hex');
-  
-  return expectedSignature === signature;
+  try {
+    const expectedSignature = crypto
+      .createHmac('sha256', webhook_secret)
+      .update(JSON.stringify(body))
+      .digest('hex');
+    
+    // Use timing-safe comparison to prevent timing attacks
+    return crypto.timingSafeEqual(
+      Buffer.from(signature, 'hex'),
+      Buffer.from(expectedSignature, 'hex')
+    );
+  } catch (error) {
+    console.error('Webhook signature validation error:', {
+      message: error.message,
+      stack: error.stack
+    });
+    return false;
+  }
 }
 
 module.exports = {

@@ -1,13 +1,30 @@
 const { createClient } = require('@supabase/supabase-js');
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Supabase URL and Key must be set in .env');
-}
+// Create a singleton Supabase client with lazy loading
+let supabaseClient = null;
 
-// Initialize Supabase client
-const supabase = createClient(supabaseUrl, supabaseKey);
+const getSupabaseClient = () => {
+  if (!supabaseClient) {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase URL and Key must be set in environment variables');
+    }
+    
+    // Initialize Supabase client with optimized options for serverless
+    supabaseClient = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false // Don't persist session in serverless environment
+      }
+    });
+  }
+  
+  return supabaseClient;
+};
+
+// For backward compatibility
+const supabase = getSupabaseClient();
 
 // Helper: Map DB donation (snake_case) to JS (camelCase)
 function mapDonationFromDb(dbDonation) {

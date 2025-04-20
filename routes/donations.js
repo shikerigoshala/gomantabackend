@@ -88,22 +88,30 @@ router.post('/', async (req, res) => {
         orderId: order.orderId
       });
 
+      // Generate payment URL for Razorpay
+      const paymentUrl = `https://api.razorpay.com/v1/checkout/embedded?key_id=${process.env.RAZORPAY_KEY_ID}&order_id=${order.orderId}&name=Gomantakgausevak&description=Donation&prefill[name]=${encodeURIComponent(donorInfo.name)}&prefill[email]=${encodeURIComponent(donorInfo.email)}&prefill[contact]=${encodeURIComponent(donorInfo.phone || '')}&notes[donationId]=${donation.id}&callback_url=${encodeURIComponent(process.env.FRONTEND_URL || 'https://donate.gomantakgausevak.com')}/payment-status&cancel_url=${encodeURIComponent(process.env.FRONTEND_URL || 'https://donate.gomantakgausevak.com')}/payment-cancelled`;
+
       res.status(201).json({
         success: true,
         donation,
         order,
-        donationId: donation.id
+        donationId: donation.id,
+        paymentUrl: paymentUrl
       });
     } catch (dbError) {
       console.log('⚠️ Using local storage fallback due to:', dbError.message);
       // If Supabase fails, use local storage fallback
       const donation = donationService._createLocalDonation(donationData);
       
+      // Generate payment URL for Razorpay
+      const paymentUrl = `https://api.razorpay.com/v1/checkout/embedded?key_id=${process.env.RAZORPAY_KEY_ID}&order_id=${order.orderId}&name=Gomantakgausevak&description=Donation&prefill[name]=${encodeURIComponent(donorInfo.name)}&prefill[email]=${encodeURIComponent(donorInfo.email)}&prefill[contact]=${encodeURIComponent(donorInfo.phone || '')}&notes[donationId]=${donation.id}&callback_url=${encodeURIComponent(process.env.FRONTEND_URL || 'https://donate.gomantakgausevak.com')}/payment-status&cancel_url=${encodeURIComponent(process.env.FRONTEND_URL || 'https://donate.gomantakgausevak.com')}/payment-cancelled`;
+
       res.status(201).json({
         success: true,
         donation,
         order,
-        donationId: donation.id
+        donationId: donation.id,
+        paymentUrl: paymentUrl
       });
     }
   } catch (error) {

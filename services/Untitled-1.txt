@@ -1,0 +1,48 @@
+# Test Environment Credentials | PhonePe Dev Docs
+
+[General FAQs](https://developer.phonepe.com/v1/docs/general-faq)
+
+# Test Environment Credentials
+Use below credentials for pre-prod/snapshot testing:
+1. MerchantID : MERCHANTUAT
+2. Maven Credentials: to be used in project level build.gradle.
+
+```
+MerchantID
+```
+
+
+```
+repositories { 
+  maven { 
+    url "https://phonepe.mycloudrepo.io/public/repositories/phonepe-intentsdk-android" 
+  } 
+}
+```
+
+
+```
+repositories { 
+  maven { 
+    url "https://phonepe.mycloudrepo.io/public/repositories/phonepe-intentsdk-android" 
+  } 
+}
+```
+
+1. Gradle dependency: to be used in app level build.gradle. Replace x.x.x with the latest available version from [release notes](https://developer.phonepe.com/v1/docs/android-intent-release-notes).
+[release notes](https://developer.phonepe.com/v1/docs/android-intent-release-notes)
+
+```
+compile 'phonepe.intentsdk.android.release:IntentSDK:x.x.x'
+```
+
+
+```
+compile 'phonepe.intentsdk.android.release:IntentSDK:x.x.x'
+```
+
+1. Host: [https://mercury-uat.phonepe.com](https://mercury-uat.phonepe.com)
+2. Keys: These keys will be used for authentication of get status API call from the server.
+[https://mercury-uat.phonepe.com](https://mercury-uat.phonepe.com)
+
+## Updated on Jul 06, 2021
