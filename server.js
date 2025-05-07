@@ -16,11 +16,9 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
-// Configure CORS
+// Configure CORS (allow all origins to avoid function crashes)
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production'
-    ? ['https://donate.gomantakgausevak.com', 'https://www.donate.gomantakgausevak.com', 'https://gomantakgausevak.vercel.app']
-    : 'http://localhost:3000',
+  origin: true, // reflect request origin
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
