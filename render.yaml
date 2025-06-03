@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: donation-app-api
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: |
+      npm install
+      cd server && npm install
+      npm run build:render
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PHONEPE_MERCHANT_ID
+        sync: false
+      - key: PHONEPE_CLIENT_SECRET
+        sync: false
+      - key: PHONEPE_SALT_INDEX
+        value: "1"
+      - key: REDIRECT_URL
+        value: "https://donate.gomantakgausevak.comhttps://gomantabackend.onrender.com/api/donations/payment-status"
+      - key: CALLBACK_URL
+        value: "https://donate.gomantakgausevak.comhttps://gomantabackend.onrender.com/api/donations/callback"
