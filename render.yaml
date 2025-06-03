@@ -1,17 +1,23 @@
 services:
   - type: web
-    name: donation-app-api
+    name: donation-app-backend
     env: node
     region: singapore
     plan: free
     buildCommand: |
       # Install dependencies and build the application
       npm install -g npm@latest
+      cd server && npm install --production
+      cd ..
       node render-build.js
     startCommand: node server.js
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000
+      - key: FRONTEND_URL
+        value: https://donate.gomantakgausevak.com
       - key: PHONEPE_MERCHANT_ID
         sync: false
       - key: PHONEPE_CLIENT_SECRET
