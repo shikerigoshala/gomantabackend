@@ -18,15 +18,32 @@ fs.emptyDirSync(buildDir);
 console.log('📦 Installing frontend dependencies...');
 execSync('npm install', { stdio: 'inherit' });
 
+// Install backend dependencies first
+console.log('📦 Installing backend dependencies...');
+const serverPackageJson = require('./server/package.json');
+const serverDependencies = serverPackageJson.dependencies || {};
+
+// Create a temporary package.json with only the required dependencies
+const tempPackageJson = {
+  name: 'donation-app-server',
+  version: '1.0.0',
+  private: true,
+  dependencies: serverDependencies
+};
+
+// Write the temporary package.json
+fs.writeFileSync(
+  path.join(rootDir, 'package-server.json'),
+  JSON.stringify(tempPackageJson, null, 2)
+);
+
+// Install production dependencies in the root
+console.log('📦 Installing production dependencies in root...');
+execSync('npm install --production --prefix .', { stdio: 'inherit' });
+
 // Build frontend
 console.log('🔨 Building frontend...');
 execSync('npm run build', { stdio: 'inherit' });
-
-// Install backend dependencies
-console.log('📦 Installing backend dependencies...');
-process.chdir(serverDir);
-execSync('npm install --production', { stdio: 'inherit' });
-process.chdir(rootDir);
 
 // Copy backend files to build directory
 console.log('📂 Copying backend files...');

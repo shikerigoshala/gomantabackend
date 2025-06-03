@@ -6,7 +6,8 @@ services:
     plan: free
     buildCommand: |
       # Install dependencies and build the application
-      npm run build:render
+      npm install -g npm@latest
+      node render-build.js
     startCommand: node server.js
     envVars:
       - key: NODE_ENV
