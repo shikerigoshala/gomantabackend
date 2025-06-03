@@ -1,10 +1,12 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 const donationRoutes = require('./routes/donations');
+const authRoutes = require('./routes/auth');
 
-// Load environment variables from .env file
-dotenv.config();
+// Load environment variables from .env file in the project root
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const app = express();
 
@@ -20,7 +22,10 @@ app.use(cors({
 app.use(express.json());
 
 // Define API routes for donations
-app.use('/api/donations', donationRoutes);
+app.use('https://gomantabackend.onrender.com/api/donations', donationRoutes);
+
+// Define API routes for authentication
+app.use('/api/auth', authRoutes);
 
 // Health check endpoint to check if the server is running
 app.get('/health', (req, res) => {

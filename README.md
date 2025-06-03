@@ -60,13 +60,13 @@ JWT_SECRET=your_jwt_secret
 - `GET /api/auth/me` - Get current user info
 
 ### Donations
-- `POST /api/donations` - Create a new donation
-- `POST /api/donations/create-sdk-order` - Create a Razorpay order
-- `GET /api/donations/payment-status` - Check payment status
-- `POST /api/donations/callback` - Razorpay webhook callback
-- `POST /api/donations/:id/refund` - Initiate a refund
-- `GET /api/donations/:id/refund-status` - Check refund status
-- `PATCH /api/donations/:id/status` - Update donation status
+- `POST https://gomantabackend.onrender.com/api/donations` - Create a new donation
+- `POST https://gomantabackend.onrender.com/api/donations/create-sdk-order` - Create a Razorpay order
+- `GET https://gomantabackend.onrender.com/api/donations/payment-status` - Check payment status
+- `POST https://gomantabackend.onrender.com/api/donations/callback` - Razorpay webhook callback
+- `POST https://gomantabackend.onrender.com/api/donations/:id/refund` - Initiate a refund
+- `GET https://gomantabackend.onrender.com/api/donations/:id/refund-status` - Check refund status
+- `PATCH https://gomantabackend.onrender.com/api/donations/:id/status` - Update donation status
 
 ## Frontend Integration
 

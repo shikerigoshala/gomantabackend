@@ -1,26 +1,46 @@
 const { createClient } = require('@supabase/supabase-js');
 
-// Create a singleton Supabase client with lazy loading
+// Create singleton Supabase clients with lazy loading
 let supabaseClient = null;
+let supabaseAdminClient = null;
 
-const getSupabaseClient = () => {
-  if (!supabaseClient) {
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_KEY;
-    
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Supabase URL and Key must be set in environment variables');
-    }
-    
-    // Initialize Supabase client with optimized options for serverless
-    supabaseClient = createClient(supabaseUrl, supabaseKey, {
-      auth: {
-        persistSession: false // Don't persist session in serverless environment
+const getSupabaseClient = (useAdmin = false) => {
+  if (useAdmin) {
+    if (!supabaseAdminClient) {
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error('Supabase URL and Service Role Key must be set in environment variables');
       }
-    });
+      
+      // Initialize Supabase admin client with service role key
+      supabaseAdminClient = createClient(supabaseUrl, supabaseKey, {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false
+        }
+      });
+    }
+    return supabaseAdminClient;
+  } else {
+    if (!supabaseClient) {
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_KEY;
+      
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error('Supabase URL and Key must be set in environment variables');
+      }
+      
+      // Initialize regular Supabase client with anon key
+      supabaseClient = createClient(supabaseUrl, supabaseKey, {
+        auth: {
+          persistSession: false // Don't persist session in serverless environment
+        }
+      });
+    }
+    return supabaseClient;
   }
-  
-  return supabaseClient;
 };
 
 // For backward compatibility
@@ -283,4 +303,175 @@ const donationService = {
   }
 };
 
-module.exports = { supabase, donationService };
+// User service
+const userService = {
+  // Sign up a new user
+  async signUp(email, password, userData) {
+    try {
+      // Get admin client for user creation (bypasses RLS)
+      const adminClient = getSupabaseClient(true);
+      
+      // First, check if user already exists
+      const { data: existingUser } = await adminClient
+        .from('users')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (existingUser) {
+        return { 
+          user: null, 
+          error: { 
+            message: 'User with this email already exists',
+            code: 'user_already_exists'
+          } 
+        };
+      }
+
+      // Prepare user data with defaults
+      const userProfile = {
+        email: email.trim().toLowerCase(),
+        name: (userData.name || '').trim() || null,
+        first_name: (userData.firstName || userData.first_name || '').trim() || null,
+        last_name: (userData.lastName || userData.last_name || '').trim() || null,
+        phone: (userData.phone || '').trim() || null,
+        is_family: Boolean(userData.is_family)
+      };
+      
+      // First, create the auth user
+      const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
+        email: userProfile.email,
+        password,
+        email_confirm: true, // Auto-confirm the email
+        user_metadata: {
+          ...userData,
+          is_family: userProfile.is_family
+        }
+      });
+
+      if (authError) {
+        console.error('Auth error during signup:', authError);
+        return { 
+          user: null, 
+          error: {
+            message: authError.message || 'Failed to create user account',
+            code: authError.code || 'auth_error'
+          } 
+        };
+      }
+
+      // Then, create a user profile in the public.users table
+      const { data: profileData, error: profileError } = await adminClient
+        .from('users')
+        .insert([{ ...userProfile, id: authData.user.id }])
+        .select()
+        .single();
+
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        
+        // Try to clean up the auth user if profile creation fails
+        try {
+          await adminClient.auth.admin.deleteUser(authData.user.id);
+        } catch (cleanupError) {
+          console.error('Failed to clean up auth user after profile creation failed:', cleanupError);
+        }
+        
+        return { 
+          user: null, 
+          error: {
+            message: profileError.message || 'Failed to create user profile',
+            code: profileError.code || 'profile_creation_error'
+          } 
+        };
+      }
+
+      return { 
+        user: { 
+          ...authData.user, 
+          ...profileData 
+        }, 
+        error: null 
+      };
+    } catch (error) {
+      console.error('Unexpected error in signUp:', error);
+      return { 
+        user: null, 
+        error: {
+          message: error.message || 'An unexpected error occurred',
+          code: error.code || 'unexpected_error'
+        } 
+      };
+    }
+  },
+
+  // Get user by email
+  async getUserByEmail(email) {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .maybeSingle(); // Use maybeSingle instead of single to return null instead of throwing when no rows
+
+      if (error) {
+        console.error('Supabase error in getUserByEmail:', error);
+        throw error;
+      }
+      
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error in getUserByEmail:', error);
+      return { data: null, error };
+    }
+  },
+
+  // Get user by ID
+  async getUserById(userId) {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows returned"
+        throw error;
+      }
+      return { data, error };
+    } catch (error) {
+      console.error('Error getting user by ID:', error);
+      return { data: null, error };
+    }
+  },
+
+  // Update user profile
+  async updateUser(userId, updateData) {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update({
+          ...updateData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating user:', error);
+        throw error;
+      }
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error in updateUser:', error);
+      return { data: null, error };
+    }
+  }
+};
+
+module.exports = { 
+  supabase, 
+  donationService, 
+  userService 
+};

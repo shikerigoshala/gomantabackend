@@ -1,11 +1,14 @@
-require('dotenv').config();
+const path = require('path');
+
+// Load environment variables from .env file in the project root
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const path = require('path');
 const authRoutes = require('./routes/auth');
 const donationRoutes = require('./routes/donations');
-const { authenticateToken } = require('./middleware/auth');
+require('./middleware/auth');
 
 // Set JWT secret
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
