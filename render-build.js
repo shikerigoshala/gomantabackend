@@ -1,92 +1,95 @@
 const { execSync } = require('child_process');
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
 
-console.log('Starting build process for Render deployment...');
+console.log('🚀 Starting build process for Render deployment...');
 
-// 1. Install frontend dependencies
-console.log('Installing frontend dependencies...');
+// Define paths
+const rootDir = __dirname;
+const serverDir = path.join(rootDir, 'server');
+const buildDir = path.join(rootDir, 'build');
+const frontendBuildDir = path.join(rootDir, 'build');
+
+// Clean build directory
+console.log('🧹 Cleaning build directory...');
+fs.emptyDirSync(buildDir);
+
+// Install frontend dependencies
+console.log('📦 Installing frontend dependencies...');
 execSync('npm install', { stdio: 'inherit' });
 
-// 2. Install backend dependencies first
-console.log('Installing backend dependencies...');
-process.chdir('server');
-try {
-  execSync('npm install --production', { stdio: 'inherit' });
-} catch (error) {
-  console.error('Error installing backend dependencies:', error);
-  process.exit(1);
-}
-process.chdir('..');
+// Build frontend
+console.log('🔨 Building frontend...');
+execSync('npm run build', { stdio: 'inherit' });
 
-// 3. Build the React app
-console.log('Building React app...');
-try {
-  execSync('npm run build', { stdio: 'inherit' });
-} catch (error) {
-  console.error('Error building React app:', error);
-  process.exit(1);
-}
+// Install backend dependencies
+console.log('📦 Installing backend dependencies...');
+process.chdir(serverDir);
+execSync('npm install --production', { stdio: 'inherit' });
+process.chdir(rootDir);
 
-// 4. Create necessary directories
-const buildDir = path.join(__dirname, 'build');
-const publicDir = path.join(__dirname, 'public');
-
-// 5. Move build files to the correct location
-console.log('Moving build files...');
-
-// Ensure the build directory exists
-if (!fs.existsSync(buildDir)) {
-  console.log('Creating build directory...');
-  fs.mkdirSync(buildDir, { recursive: true });
-}
-
-// Copy server files to the build directory
-console.log('Copying server files...');
-const serverFiles = fs.readdirSync('server');
-serverFiles.forEach(file => {
-  if (file !== 'node_modules' && file !== '.git') {
-    const srcPath = path.join('server', file);
-    const destPath = path.join(buildDir, file);
-    
-    if (fs.lstatSync(srcPath).isDirectory()) {
-      copyFolderRecursiveSync(srcPath, destPath);
-    } else {
-      fs.copyFileSync(srcPath, destPath);
-    }
+// Copy backend files to build directory
+console.log('📂 Copying backend files...');
+fs.copySync(serverDir, buildDir, {
+  filter: (src) => {
+    // Skip node_modules, .git, and other unnecessary files
+    const relativePath = path.relative(serverDir, src);
+    return !relativePath.startsWith('node_modules') && 
+           !relativePath.startsWith('.git') &&
+           !relativePath.endsWith('.env') &&
+           !relativePath.includes('test') &&
+           !relativePath.includes('coverage');
   }
 });
 
-// Copy the built React app to the public directory
-if (fs.existsSync('build')) {
-  console.log('Copying React build files...');
-  const reactBuildPath = path.join(buildDir, 'public');
-  
-  if (fs.existsSync(reactBuildPath)) {
-    fs.rmSync(reactBuildPath, { recursive: true, force: true });
+// Copy frontend build to build/public
+console.log('📂 Copying frontend build files...');
+fs.ensureDirSync(path.join(buildDir, 'public'));
+fs.copySync(frontendBuildDir, path.join(buildDir, 'public'), { overwrite: true });
+
+// Create a package.json in the build directory
+const packageJson = {
+  name: 'donation-app',
+  version: '1.0.0',
+  private: true,
+  main: 'server.js',
+  scripts: {
+    start: 'node server.js'
+  },
+  dependencies: {}
+};
+
+// Copy only production dependencies from server/package.json
+try {
+  const serverPackageJson = require('./server/package.json');
+  if (serverPackageJson.dependencies) {
+    packageJson.dependencies = serverPackageJson.dependencies;
   }
-  
-  copyFolderRecursiveSync('build', reactBuildPath);
+} catch (error) {
+  console.warn('⚠️ Could not read server/package.json:', error.message);
 }
 
-console.log('Build process completed successfully!');
+// Write the package.json to the build directory
+fs.writeFileSync(
+  path.join(buildDir, 'package.json'),
+  JSON.stringify(packageJson, null, 2)
+);
 
-// Helper function to copy directories recursively
-function copyFolderRecursiveSync(source, target) {
-  if (!fs.existsSync(target)) {
-    fs.mkdirSync(target, { recursive: true });
-  }
+console.log('✅ Package.json created in build directory');
 
-  const files = fs.readdirSync(source);
-  
-  files.forEach(file => {
-    const curSource = path.join(source, file);
-    const curTarget = path.join(target, file);
-    
-    if (fs.lstatSync(curSource).isDirectory()) {
-      copyFolderRecursiveSync(curSource, curTarget);
-    } else {
-      fs.copyFileSync(curSource, curTarget);
-    }
-  });
+// Create a .env file in the build directory
+if (fs.existsSync(path.join(serverDir, '.env'))) {
+  fs.copyFileSync(
+    path.join(serverDir, '.env'),
+    path.join(buildDir, '.env')
+  );
+  console.log('✅ Copied .env file to build directory');
+} else {
+  console.warn('⚠️ No .env file found in server directory');
 }
+
+console.log('🎉 Build process completed successfully!');
+console.log('📦 Build directory structure:');
+console.log(fs.readdirSync(buildDir));
+
+process.exit(0);
