@@ -5,8 +5,15 @@ services:
     region: singapore
     plan: free
     buildCommand: |
+      # Install frontend dependencies
       npm install
-      cd server && npm install
+      
+      # Install backend dependencies
+      cd server
+      npm install
+      cd ..
+      
+      # Build the frontend
       npm run build:render
     startCommand: node server.js
     envVars:
