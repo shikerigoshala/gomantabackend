@@ -29,7 +29,7 @@
     "url": "https://github.com/thepranaygupta/react-tailwind-css-starter-pack/issues"
   },
   "scripts": {
-    "start": "node server.js",
+    "start": "node build/server.js",
     "dev": "react-scripts start",
     "build": "react-scripts build",
     "build:render": "node render-build.js",
