@@ -4,6 +4,8 @@ const path = require('path');
 
 // Set environment to production
 process.env.NODE_ENV = 'production';
+process.env.GENERATE_SOURCEMAP = 'false'; // Disable source maps to save memory
+process.env.INLINE_RUNTIME_CHUNK = 'false'; // Don't inline runtime chunk
 
 // Define paths
 const buildDir = path.join(__dirname, 'build');
@@ -14,7 +16,15 @@ const publicDir = path.join(buildDir, 'public');
 const runCommand = (command, options = {}) => {
   try {
     console.log(`🚀 Running: ${command}`);
-    execSync(command, { stdio: 'inherit', ...options });
+    execSync(command, { 
+      stdio: 'inherit', 
+      env: { 
+        ...process.env,
+        NODE_OPTIONS: '--max-old-space-size=4096',
+        NODE_ENV: 'production'
+      },
+      ...options 
+    });
     return true;
   } catch (error) {
     console.error(`❌ Command failed: ${command}`, error);
@@ -32,67 +42,108 @@ const ensureDirectories = () => {
   });
 };
 
-// Move files from source to target directory
+// Process files in chunks to avoid memory issues
+const processInChunks = (files, processFn, chunkSize = 50) => {
+  for (let i = 0; i < files.length; i += chunkSize) {
+    const chunk = files.slice(i, i + chunkSize);
+    chunk.forEach(processFn);
+    // Force garbage collection between chunks if available
+    if (global.gc) {
+      global.gc();
+    }
+  }
+};
+
+// Move files from source to target directory in chunks
 const moveFiles = (sourceDir, targetDir) => {
   if (!fs.existsSync(sourceDir)) return;
   
   const files = fs.readdirSync(sourceDir);
-  files.forEach(file => {
+  
+  processInChunks(files, (file) => {
     const sourcePath = path.join(sourceDir, file);
     const targetPath = path.join(targetDir, file);
     
     // Skip if source and target are the same
     if (sourcePath === targetPath) return;
     
-    // If target exists, remove it first
-    if (fs.existsSync(targetPath)) {
-      const stat = fs.lstatSync(targetPath);
-      if (stat.isDirectory()) {
-        fs.rmSync(targetPath, { recursive: true, force: true });
-      } else {
-        fs.unlinkSync(targetPath);
+    try {
+      // If target exists, remove it first
+      if (fs.existsSync(targetPath)) {
+        const stat = fs.lstatSync(targetPath);
+        if (stat.isDirectory()) {
+          fs.rmSync(targetPath, { recursive: true, force: true });
+        } else {
+          fs.unlinkSync(targetPath);
+        }
       }
+      
+      // Create target directory if it doesn't exist
+      const targetParentDir = path.dirname(targetPath);
+      if (!fs.existsSync(targetParentDir)) {
+        fs.mkdirSync(targetParentDir, { recursive: true });
+      }
+      
+      // Move the file/directory
+      fs.renameSync(sourcePath, targetPath);
+    } catch (error) {
+      console.error(`Error moving ${sourcePath} to ${targetPath}:`, error);
     }
-    
-    // Move the file/directory
-    fs.renameSync(sourcePath, targetPath);
   });
   
-  // Remove the source directory if it's empty
+  // Try to remove the source directory if it's empty
   try {
     fs.rmdirSync(sourceDir);
   } catch (e) {
-    // Directory not empty, which is fine
+    // Directory not empty or other error, which is fine
   }
 };
 
 // Main build function
 const buildApp = async () => {
-  console.log('🚀 Starting build process...');
+  console.log('🚀 Starting optimized build process...');
   
   try {
     // 1. Ensure directories exist
     ensureDirectories();
     
-    // 2. Install root dependencies with --legacy-peer-deps to handle peer dependency issues
-    console.log('📦 Installing root dependencies...');
-    if (!runCommand('npm install --legacy-peer-deps')) {
-      throw new Error('Failed to install root dependencies');
+    // 2. Clean up node_modules to ensure a fresh install
+    if (fs.existsSync('node_modules')) {
+      console.log('🧹 Cleaning up node_modules...');
+      fs.rmSync('node_modules', { recursive: true, force: true });
     }
     
-    // 3. Build the React app
+    // 3. Install only production dependencies first to save memory
+    console.log('📦 Installing production dependencies...');
+    if (!runCommand('npm install --production --legacy-peer-deps --prefer-offline')) {
+      throw new Error('Failed to install production dependencies');
+    }
+    
+    // 4. Install dev dependencies separately
+    console.log('📦 Installing dev dependencies...');
+    if (!runCommand('npm install --only=dev --legacy-peer-deps --prefer-offline')) {
+      throw new Error('Failed to install dev dependencies');
+    }
+    
+    // 5. Build the React app with increased memory limit and optimizations
     console.log('🔨 Building React app...');
-    if (!runCommand('npm run build')) {
+    if (!runCommand('node --max-old-space-size=4096 node_modules/react-scripts/scripts/build.js')) {
       throw new Error('Failed to build React app');
     }
     
-    // 4. Install server dependencies
+    // 6. Install server dependencies
     console.log('📦 Installing server dependencies...');
-    if (!runCommand('npm install --production', { cwd: serverDir })) {
+    if (!runCommand('npm install --production --prefer-offline', { 
+      cwd: serverDir,
+      env: { 
+        ...process.env,
+        NODE_OPTIONS: '--max-old-space-size=2048'
+      }
+    })) {
       throw new Error('Failed to install server dependencies');
     }
     
-    // 5. Organize build files
+    // 7. Organize build files in chunks to avoid memory issues
     console.log('📂 Organizing build files...');
     
     // Ensure public directory exists
@@ -100,11 +151,22 @@ const buildApp = async () => {
       fs.mkdirSync(publicDir, { recursive: true });
     }
     
-    // Move all files from build to public
+    // Move all files from build to public in chunks
     moveFiles(buildDir, publicDir);
     
-    // Move public directory back to build directory
+    // Move public directory back to build directory in chunks
     moveFiles(publicDir, buildDir);
+    
+    // 8. Clean up development dependencies to reduce image size
+    console.log('🧹 Cleaning up development dependencies...');
+    if (fs.existsSync('node_modules')) {
+      fs.rmSync('node_modules', { recursive: true, force: true });
+    }
+    
+    // Reinstall only production dependencies
+    if (!runCommand('npm install --production --legacy-peer-deps --prefer-offline')) {
+      console.warn('⚠️ Failed to clean up development dependencies');
+    }
     
     console.log('✅ Build completed successfully!');
     return true;
