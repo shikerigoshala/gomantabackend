@@ -7,10 +7,22 @@ process.env.NODE_ENV = 'production';
 process.env.GENERATE_SOURCEMAP = 'false'; // Disable source maps to save memory
 process.env.INLINE_RUNTIME_CHUNK = 'false'; // Don't inline runtime chunk
 
+// Increase Node.js memory limit
+process.env.NODE_OPTIONS = '--max-old-space-size=4096';
+
 // Define paths
 const buildDir = path.join(__dirname, 'build');
 const serverDir = path.join(__dirname, 'server');
-const publicDir = path.join(buildDir, 'public');
+const publicDir = path.join(__dirname, 'public');
+
+// Log environment for debugging
+console.log('Environment:', {
+  NODE_ENV: process.env.NODE_ENV,
+  NODE_OPTIONS: process.env.NODE_OPTIONS,
+  BUILD_DIR: buildDir,
+  SERVER_DIR: serverDir,
+  PUBLIC_DIR: publicDir
+});
 
 // Helper function to run commands with error handling
 const runCommand = (command, options = {}) => {
@@ -21,14 +33,18 @@ const runCommand = (command, options = {}) => {
       env: { 
         ...process.env,
         NODE_OPTIONS: '--max-old-space-size=4096',
-        NODE_ENV: 'production'
+        NODE_ENV: 'production',
+        GENERATE_SOURCEMAP: 'false',
+        INLINE_RUNTIME_CHUNK: 'false'
       },
+      shell: '/bin/bash',
       ...options 
     });
+    console.log('✅ Command successful');
     return true;
   } catch (error) {
     console.error(`❌ Command failed: ${command}`, error);
-    return false;
+    process.exit(1); // Exit with error code on failure
   }
 };
 

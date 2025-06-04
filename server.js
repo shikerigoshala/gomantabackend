@@ -104,32 +104,33 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Configure CORS
-const allowedOrigins = [
-  'https://donate.gomantakgausevak.com', // Production frontend
-  'http://localhost:3000',               // Local development
-  'http://127.0.0.1:3000',               // Local development alternative
-  'http://localhost:3001',               // Local API
-  'http://127.0.0.1:3001'                // Local API alternative
-];
-
 const corsOptions = {
   origin: function (origin, callback) {
+    // Allow all origins in development
+    if (process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    
+    // List of allowed origins in production
+    const allowedOrigins = [
+      'https://donate.gomantakgausevak.com',
+      'https://www.donate.gomantakgausevak.com',
+      process.env.FRONTEND_URL
+    ].filter(Boolean);
+    
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
     // Check if the origin is in the allowed list
-    if (allowedOrigins.includes(origin) || 
-        process.env.NODE_ENV === 'development') {
+    if (allowedOrigins.some(allowedOrigin => 
+      origin === allowedOrigin || 
+      origin.startsWith(allowedOrigin.replace('https://', 'http://'))
+    )) {
       return callback(null, true);
     }
     
-    // For production, only allow the production frontend
-    if (process.env.NODE_ENV === 'production' && 
-        origin === process.env.FRONTEND_URL) {
-      return callback(null, true);
-    }
-    
-    callback(new Error(`CORS not allowed for origin: ${origin}`));
+    console.warn(`CORS blocked for origin: ${origin}`);
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
