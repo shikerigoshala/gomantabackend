@@ -5,41 +5,54 @@ let supabaseClient = null;
 let supabaseAdminClient = null;
 
 const getSupabaseClient = (useAdmin = false) => {
-  if (useAdmin) {
-    if (!supabaseAdminClient) {
-      const supabaseUrl = process.env.SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      
-      if (!supabaseUrl || !supabaseKey) {
-        throw new Error('Supabase URL and Service Role Key must be set in environment variables');
-      }
-      
-      // Initialize Supabase admin client with service role key
-      supabaseAdminClient = createClient(supabaseUrl, supabaseKey, {
+  try {
+    // Get required configuration
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    // Validate required configurations
+    const missingVars = [];
+    if (!supabaseUrl) missingVars.push('SUPABASE_URL');
+    if (!supabaseAnonKey) missingVars.push('SUPABASE_ANON_KEY');
+    if (useAdmin && !serviceRoleKey) missingVars.push('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (missingVars.length > 0) {
+      console.error('❌ Missing required environment variables:', missingVars.join(', '));
+      throw new Error(`Missing required Supabase configuration: ${missingVars.join(', ')}`);
+    }
+
+    // Return existing client if already initialized
+    if (useAdmin) {
+      if (supabaseAdminClient) return supabaseAdminClient;
+
+      // Initialize admin client with service role key
+      supabaseAdminClient = createClient(supabaseUrl, serviceRoleKey, {
         auth: {
           persistSession: false,
-          autoRefreshToken: false
+          autoRefreshToken: false,
+          detectSessionInUrl: false
         }
       });
-    }
-    return supabaseAdminClient;
-  } else {
-    if (!supabaseClient) {
-      const supabaseUrl = process.env.SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_KEY;
-      
-      if (!supabaseUrl || !supabaseKey) {
-        throw new Error('Supabase URL and Key must be set in environment variables');
-      }
-      
-      // Initialize regular Supabase client with anon key
-      supabaseClient = createClient(supabaseUrl, supabaseKey, {
+      console.log('✅ Admin Supabase client initialized successfully');
+      return supabaseAdminClient;
+    } else {
+      if (supabaseClient) return supabaseClient;
+
+      // Initialize regular client with anon key
+      supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
         auth: {
-          persistSession: false // Don't persist session in serverless environment
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false
         }
       });
+      console.log('✅ Public Supabase client initialized successfully');
+      return supabaseClient;
     }
-    return supabaseClient;
+  } catch (error) {
+    console.error('❌ Failed to initialize Supabase client:', error.message);
+    throw error;
   }
 };
 
