@@ -5,20 +5,13 @@ services:
     region: singapore
     plan: free
     buildCommand: |
-      # Install Node.js and npm
-      curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-      sudo apt-get install -y nodejs
-      
-      # Install all dependencies
-      cd /opt/render/project
+      # Navigate to server directory and install dependencies
+      cd /opt/render/project/server
       npm install --production
       
-      # Create necessary directories
-      mkdir -p server
-      
-      # Copy server files
-      cp -r server/* . 2>/dev/null || :
-      cp -r server/.* . 2>/dev/null || :
+      # Copy server files to root
+      cp -r * .. 2>/dev/null || :
+      cd ..
       
       # Ensure .env exists
       touch .env
