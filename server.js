@@ -1,57 +1,91 @@
 const path = require('path');
 const fs = require('fs');
-require('dotenv').config(); // Load .env file first as fallback
 
-// Determine environment
-const envPath = process.env.NODE_ENV === 'production' 
-  ? path.join(__dirname, '../.env.production')
-  : path.join(__dirname, '../.env');
+// Load environment variables with priority:
+// 1. Platform environment variables (highest priority)
+// 2. .env.production (for production)
+// 3. .env (for development, lowest priority)
 
-// Check if the environment file exists and load it
+// Load default .env first if it exists
+const envPath = path.join(__dirname, '../.env');
 if (fs.existsSync(envPath)) {
-  require('dotenv').config({ path: envPath, override: true });
-  console.log(`Loaded environment variables from ${envPath}`);
-} else {
-  console.warn(`Warning: Environment file not found at ${envPath}`);
+  require('dotenv').config({ path: envPath });
+  console.log('Loaded environment variables from .env');
 }
+
+// Then load production environment variables if in production
+if (process.env.NODE_ENV === 'production') {
+  const prodEnvPath = path.join(__dirname, '../.env.production');
+  if (fs.existsSync(prodEnvPath)) {
+    require('dotenv').config({ path: prodEnvPath, override: true });
+    console.log('Loaded environment variables from .env.production');
+  } else {
+    console.warn('⚠️ Production environment file (.env.production) not found');
+  }
+}
+
+// Log environment status
+console.log('\n=== Environment Status ===');
+console.log(`Node Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`PORT: ${process.env.PORT || 3001}`);
+console.log(`SUPABASE_URL: ${process.env.SUPABASE_URL ? '✅ Set' : '❌ Missing'}`);
+console.log(`SUPABASE_ANON_KEY: ${process.env.SUPABASE_ANON_KEY ? '✅ Set' : '❌ Missing'}`);
+console.log(`SUPABASE_SERVICE_ROLE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅ Set' : '❌ Missing'}`);
+console.log(`JWT_SECRET: ${process.env.JWT_SECRET ? '✅ Set' : '❌ Missing'}`);
+console.log(`FRONTEND_URL: ${process.env.FRONTEND_URL || '❌ Missing'}`);
+console.log('==========================\n');
 
 // Verify required environment variables
 const requiredVars = [
   'SUPABASE_URL',
   'SUPABASE_SERVICE_ROLE_KEY',
-  'JWT_SECRET',
   'FRONTEND_URL'
 ];
+
+// Set a secure JWT_SECRET if not provided
+if (!process.env.JWT_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('❌ FATAL: JWT_SECRET is required in production');
+    process.exit(1);
+  } else {
+    console.warn('⚠️ WARNING: JWT_SECRET not set. Using a development secret.');
+    process.env.JWT_SECRET = 'dev-secret-' + Math.random().toString(36).substring(2);
+  }
+}
 
 const missingVars = requiredVars.filter(varName => !process.env[varName]);
 
 if (missingVars.length > 0) {
   console.error('\n❌ ERROR: Missing required environment variables:');
   missingVars.forEach(varName => console.error(`- ${varName}`));
-  console.log('\nCurrent environment variables:', JSON.stringify(process.env, null, 2));
-  process.exit(1);
+  console.log('\nCurrent environment variables:', JSON.stringify({
+    NODE_ENV: process.env.NODE_ENV,
+    PORT: process.env.PORT,
+    SUPABASE_URL: process.env.SUPABASE_URL ? '✅ Set' : '❌ Missing',
+    FRONTEND_URL: process.env.FRONTEND_URL || '❌ Missing',
+    JWT_SECRET: process.env.JWT_SECRET ? '✅ Set' + (process.env.JWT_SECRET.startsWith('default-') ? ' (using default)' : '') : '❌ Missing',
+    // Don't log sensitive values
+  }, null, 2));
+  
+  if (process.env.NODE_ENV === 'production') {
+    console.error('\n❌ FATAL: Cannot start in production with missing required variables');
+    process.exit(1);
+  } else {
+    console.warn('\n⚠️  WARNING: Starting in development mode with missing variables');
+  }
 }
 
 // Enhanced environment variable logging (mask sensitive values)
 console.log('\n=== Environment Configuration ===');
 console.log(`NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+console.log(`PORT: ${process.env.PORT || 3001}`);
 console.log(`SUPABASE_URL: ${process.env.SUPABASE_URL ? '✅ Set' : '❌ Missing'}`);
 console.log(`JWT_SECRET: ${process.env.JWT_SECRET ? '✅ Set' : '❌ Missing'}`);
 console.log(`FRONTEND_URL: ${process.env.FRONTEND_URL || '❌ Missing'}`);
-console.log('=================================\n');
-console.log('NODE_ENV:', process.env.NODE_ENV);
-console.log('Environment file loaded from:', envPath);
 console.log('\nSupabase Configuration:');
-console.log('- SUPABASE_URL:', process.env.SUPABASE_URL ? 'Set' : 'Not set');
-console.log('- NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Not set');
-console.log('- SUPABASE_KEY:', process.env.SUPABASE_KEY ? 'Set' : 'Not set');
-console.log('- SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? 'Set' : 'Not set');
-console.log('- NEXT_PUBLIC_SUPABASE_ANON_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Set' : 'Not set');
-console.log('- SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Set' : 'Not set');
-console.log('- SERVICE_ROLE_KEY:', process.env.SERVICE_ROLE_KEY ? 'Set' : 'Not set');
-console.log('\nServer Configuration:');
-console.log('- PORT:', process.env.PORT || 3001);
-console.log('==============================\n');
+console.log(`- SUPABASE_URL: ${process.env.SUPABASE_URL ? '✅ Set' : '❌ Missing'}`);
+console.log(`- SUPABASE_SERVICE_ROLE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅ Set' : '❌ Missing'}`);
+console.log('=================================\n');
 
 const express = require('express');
 const cors = require('cors');
