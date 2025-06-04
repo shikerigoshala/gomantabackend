@@ -1,11 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Supabase configuration
-const SUPABASE_URL = 'https://xcdyletgoabaxznsthqj.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjZHlsZXRnb2FiYXh6bnN0aHFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQyNjMzMTgsImV4cCI6MjA1OTgzOTMxOH0.SSQfKfhXyLcLHUOJnnBXj1SJyKH2tGKKiuRoZ1SN_jI';
+// Validate environment variables
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase configuration. Please check your environment variables.');
+  throw new Error('Missing Supabase configuration');
+}
 
 // Initialize Supabase client
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+});
+
+// Log Supabase initialization
+console.log('Supabase client initialized with URL:', supabaseUrl);
 
 // Donation service
 export const donationService = {

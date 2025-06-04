@@ -1,14 +1,13 @@
 import axios from 'axios';
 
-// Donations API URL: relative in dev (proxy), absolute in production
-const API_URL =
-  process.env.NODE_ENV === 'production'
-    ? `${process.env.REACT_APP_API_URL}https://gomantabackend.onrender.com/api/donations`
-    : 'https://gomantabackend.onrender.com/api/donations';
+// Base API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const DONATIONS_ENDPOINT = `${API_URL}/donations`;
 
 // Log the API configuration
 console.log('API Configuration:', {
   API_URL,
+  DONATIONS_ENDPOINT,
   NODE_ENV: process.env.NODE_ENV
 });
 
@@ -173,7 +172,7 @@ const donationService = {
   // Get all donations for the current user
   async getUserDonations() {
     try {
-      const response = await axios.get(API_URL);
+      const response = await axios.get(DONATIONS_ENDPOINT);
       return response.data;
     } catch (error) {
       console.error('Error getting user donations:', error);
@@ -184,7 +183,7 @@ const donationService = {
   // Get a specific donation
   async getDonation(id) {
     try {
-      const response = await axios.get(`${API_URL}/${id}`);
+      const response = await axios.get(`${DONATIONS_ENDPOINT}/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error getting donation:', error);
