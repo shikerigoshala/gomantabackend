@@ -26,8 +26,8 @@ const config = {
       : process.env.REACT_APP_API_URL || 'http://localhost:3001/api',
     
     // API Key for authentication with the backend
-    // This must match the API_KEY in the backend's .env.production file
-    apiKey: process.env.REACT_APP_API_KEY || 'test-api-key-dev',
+    // Use Supabase anon key as the API key for consistency
+    apiKey: process.env.REACT_APP_SUPABASE_ANON_KEY || 'test-api-key-dev',
     
     // API endpoints
     endpoints: {
