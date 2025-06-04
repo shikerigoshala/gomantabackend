@@ -165,7 +165,7 @@ const FamilyRegistrationModal = ({ isOpen, onClose, onRegisterSuccess }) => {
         method: 'POST',
         headers: {
           ...requestOptions.headers,
-          'x-api-key': apiKey ? `${apiKey.substring(0, 5)}...${apiKey.substring(apiKey.length - 3)}` : 'MISSING'
+          'x-api-key': apiKey || ''
         },
         body: {
           ...registrationData,
@@ -178,6 +178,13 @@ const FamilyRegistrationModal = ({ isOpen, onClose, onRegisterSuccess }) => {
           }
         }
       });
+      
+      // Log request details (safely masking sensitive data)
+      console.log('=== Family Registration Request ===');
+      console.log('API URL:', config.api.baseUrl);
+      console.log('Endpoint:', config.api.endpoints.registerFamily);
+      console.log('API Key:', apiKey ? `${apiKey.substring(0, 5)}...${apiKey.substring(apiKey.length - 3)}` : 'MISSING');
+      console.log('================================');
       
       const startTime = Date.now();
       let response;
