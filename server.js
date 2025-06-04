@@ -16,10 +16,21 @@ if (fs.existsSync(envPath)) {
   require('dotenv').config({ path: path.join(__dirname, '../.env') });
 }
 
-// Log environment for debugging
+// Enhanced environment variable logging
+console.log('\n=== Environment Configuration ===');
 console.log('NODE_ENV:', process.env.NODE_ENV);
-console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? 'Set' : 'Not set');
-console.log('SUPABASE_KEY:', process.env.SUPABASE_KEY ? 'Set' : 'Not set');
+console.log('Environment file loaded from:', envPath);
+console.log('\nSupabase Configuration:');
+console.log('- SUPABASE_URL:', process.env.SUPABASE_URL ? 'Set' : 'Not set');
+console.log('- NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Not set');
+console.log('- SUPABASE_KEY:', process.env.SUPABASE_KEY ? 'Set' : 'Not set');
+console.log('- SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? 'Set' : 'Not set');
+console.log('- NEXT_PUBLIC_SUPABASE_ANON_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Set' : 'Not set');
+console.log('- SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Set' : 'Not set');
+console.log('- SERVICE_ROLE_KEY:', process.env.SERVICE_ROLE_KEY ? 'Set' : 'Not set');
+console.log('\nServer Configuration:');
+console.log('- PORT:', process.env.PORT || 3001);
+console.log('==============================\n');
 
 const express = require('express');
 const cors = require('cors');
