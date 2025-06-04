@@ -103,61 +103,97 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
+// Define allowed origins
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://donate.gomantakgausevak.com',
+  'https://www.donate.gomantakgausevak.com',
+  'https://gomantabackend.onrender.com',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
+console.log('🔄 Allowed CORS origins:', allowedOrigins);
+
 // Configure CORS
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow all origins in development
-    if (process.env.NODE_ENV !== 'production') {
-      return callback(null, true);
-    }
-    
-    // List of allowed origins in production
-    const allowedOrigins = [
-      'https://donate.gomantakgausevak.com',
-      'https://www.donate.gomantakgausevak.com',
-      process.env.FRONTEND_URL
-    ].filter(Boolean);
-    
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    // Check if the origin is in the allowed list
-    if (allowedOrigins.some(allowedOrigin => 
-      origin === allowedOrigin || 
-      origin.startsWith(allowedOrigin.replace('https://', 'http://'))
-    )) {
+    if (!origin) {
+      console.log('🔓 No origin (non-browser request) - allowing');
       return callback(null, true);
     }
     
-    console.warn(`CORS blocked for origin: ${origin}`);
-    callback(new Error('Not allowed by CORS'));
+    try {
+      const originUrl = new URL(origin);
+      const isAllowed = allowedOrigins.some(allowedOrigin => {
+        try {
+          const allowedUrl = new URL(allowedOrigin);
+          return (
+            origin === allowedOrigin ||
+            originUrl.hostname === allowedUrl.hostname ||
+            originUrl.hostname.endsWith('.' + allowedUrl.hostname) ||
+            (process.env.NODE_ENV !== 'production' && allowedUrl.hostname === 'localhost')
+          );
+        } catch (e) {
+          console.warn(`Error parsing allowed origin ${allowedOrigin}:`, e);
+          return false;
+        }
+      });
+
+      if (isAllowed) {
+        console.log(`✅ Allowed CORS request from: ${origin}`);
+        return callback(null, true);
+      }
+      
+      console.warn(`🚫 CORS blocked request from: ${origin}`);
+      console.log('🔄 Allowed origins:', allowedOrigins);
+      return callback(new Error(`Not allowed by CORS: ${origin}`), false);
+      
+    } catch (e) {
+      console.warn('Error processing CORS origin:', e);
+      return callback(e, false);
+    }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [
     'Content-Type', 
     'Authorization', 
-    'X-Requested-With',
-    'Accept',
-    'Origin',
-    'X-Auth-Token',
-    'X-API-Key'
+    'x-api-key',
+    'x-requested-with',
+    'accept',
+    'origin'
   ],
   exposedHeaders: [
-    'Content-Range',
+    'Content-Range', 
     'X-Total-Count',
-    'Link'
+    'x-ratelimit-limit',
+    'x-ratelimit-remaining',
+    'x-ratelimit-reset'
   ],
   maxAge: 86400, // 24 hours
   preflightContinue: false,
   optionsSuccessStatus: 204
 };
 
-// Enable CORS for all routes
+// Apply CORS middleware
+console.log('🛡️  Applying CORS middleware...');
 app.use(cors(corsOptions));
 
 // Handle preflight requests
 app.options('*', cors(corsOptions));
+
+// Log all incoming requests for debugging
+app.use((req, res, next) => {
+  console.log(`\n🌐 ${new Date().toISOString()} ${req.method} ${req.originalUrl}`);
+  console.log('📝 Headers:', {
+    origin: req.headers.origin,
+    'x-api-key': req.headers['x-api-key'] ? '***' + req.headers['x-api-key'].slice(-4) : 'Not provided',
+    'content-type': req.headers['content-type']
+  });
+  next();
+});
 
 // Log CORS errors
 app.use((err, req, res, next) => {
