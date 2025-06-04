@@ -113,67 +113,113 @@ const FamilyRegistrationModal = ({ isOpen, onClose, onRegisterSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Clear previous errors
+    setIsLoading(true);
     setFormErrors({});
-    
-    if (!validateForm()) {
+
+    // Basic validation
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      setIsLoading(false);
       return;
     }
-    
-    setIsLoading(true);
-    
+
     try {
-      // Prepare the data with trimmed and formatted values
       const registrationData = {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         email: formData.email.trim().toLowerCase(),
-        phone: formData.phone.trim().replace(/\s+/g, ''), // Remove all whitespace
+        phone: formData.phone.trim().replace(/\s+/g, ''),
         password: formData.password,
-        isFamily: true
+        confirmPassword: formData.confirmPassword,
       };
+
+      // Get API key from config
+      const apiKey = config.api.apiKey;
       
-      console.log('Sending registration data:', registrationData);
-      console.log('Using API key (first 10 chars):', config.api.apiKey ? config.api.apiKey.substring(0, 10) + '...' : 'No API key found');
-      
+      if (!apiKey) {
+        throw new Error('API key is not configured. Please check your configuration.');
+      }
+
       const requestOptions = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': config.api.apiKey // Using lowercase header name for consistency
+          'x-api-key': apiKey, // Using lowercase header name for consistency
+          'X-Requested-With': 'XMLHttpRequest' // Helps identify AJAX requests
         },
-        body: JSON.stringify(registrationData)
+        body: JSON.stringify(registrationData),
+        credentials: 'include' // Include cookies if needed
       };
       
-      console.log('Sending request with options:', {
+      // Log the request (without sensitive data)
+      console.log('📤 Sending registration request:', {
         url: `${config.api.baseUrl}${config.api.endpoints.registerFamily}`,
         method: 'POST',
-        headers: requestOptions.headers,
-        body: registrationData
+        headers: {
+          ...requestOptions.headers,
+          'x-api-key': `${apiKey.substring(0, 5)}...${apiKey.substring(apiKey.length - 3)}`
+        },
+        body: {
+          ...registrationData,
+          password: '••••••••',
+          confirmPassword: '••••••••'
+        }
       });
       
-      const response = await fetch(
-        `${config.api.baseUrl}${config.api.endpoints.registerFamily}`, 
-        requestOptions
-      );
-
-      const data = await response.json();
-      console.log('Registration response:', data);
-
-      if (!response.ok) {
-        if (data.errors) {
-          // Handle field-specific errors from the server
-          setFormErrors(data.errors);
-          // Show the first error message
-          const firstError = Object.values(data.errors)[0];
-          if (firstError) {
-            toast.error(firstError);
-          }
-        } else {
-          throw new Error(data.message || 'Registration failed. Please try again.');
+      const startTime = Date.now();
+      let response;
+      let data;
+      
+      try {
+        response = await fetch(
+          `${config.api.baseUrl}${config.api.endpoints.registerFamily}`, 
+          requestOptions
+        );
+        
+        // First check if we got a response at all
+        if (!response) {
+          throw new Error('No response received from server');
         }
-        return;
+        
+        // Try to parse JSON response
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          console.error('Failed to parse JSON response:', jsonError);
+          const text = await response.text();
+          console.error('Raw response:', text);
+          throw new Error('Invalid response from server');
+        }
+        
+        console.log(`📥 Received response in ${Date.now() - startTime}ms:`, {
+          status: response.status,
+          statusText: response.statusText,
+          data: data
+        });
+        
+        if (!response.ok) {
+          // Handle HTTP errors (4xx, 5xx)
+          if (data && data.errors) {
+            // Handle field-specific errors from the server
+            setFormErrors(data.errors);
+            // Show the first error message
+            const firstError = Object.values(data.errors)[0];
+            if (firstError) {
+              toast.error(firstError);
+            }
+          } else {
+            // Handle other HTTP errors
+            const errorMessage = data?.message || 
+                               data?.error?.message || 
+                               `Server responded with status ${response.status}`;
+            throw new Error(errorMessage);
+          }
+          return;
+        }
+      } catch (fetchError) {
+        console.error('❌ Registration request failed:', fetchError);
+        throw new Error(fetchError.message || 'Failed to connect to the server. Please try again.');
       }
 
       // Prepare user data for success callback
