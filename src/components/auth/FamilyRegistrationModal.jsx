@@ -135,16 +135,28 @@ const FamilyRegistrationModal = ({ isOpen, onClose, onRegisterSuccess }) => {
       };
       
       console.log('Sending registration data:', registrationData);
+      console.log('Using API key (first 10 chars):', config.api.apiKey ? config.api.apiKey.substring(0, 10) + '...' : 'No API key found');
       
-      
-      const response = await fetch(`${config.api.baseUrl}${config.api.endpoints.registerFamily}`, {
+      const requestOptions = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': config.api.apiKey // Add API key to headers
+          'x-api-key': config.api.apiKey // Using lowercase header name for consistency
         },
         body: JSON.stringify(registrationData)
+      };
+      
+      console.log('Sending request with options:', {
+        url: `${config.api.baseUrl}${config.api.endpoints.registerFamily}`,
+        method: 'POST',
+        headers: requestOptions.headers,
+        body: registrationData
       });
+      
+      const response = await fetch(
+        `${config.api.baseUrl}${config.api.endpoints.registerFamily}`, 
+        requestOptions
+      );
 
       const data = await response.json();
       console.log('Registration response:', data);
