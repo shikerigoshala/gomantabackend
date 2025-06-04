@@ -1,7 +1,25 @@
 const path = require('path');
+const fs = require('fs');
 
-// Load environment variables from .env file in the project root
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+// Determine environment
+const envPath = process.env.NODE_ENV === 'production' 
+  ? path.join(__dirname, '../.env.production')
+  : path.join(__dirname, '../.env');
+
+// Check if the environment file exists
+if (fs.existsSync(envPath)) {
+  require('dotenv').config({ path: envPath });
+  console.log(`Loaded environment variables from ${envPath}`);
+} else {
+  console.warn(`Warning: Environment file not found at ${envPath}`);
+  // Fallback to default .env
+  require('dotenv').config({ path: path.join(__dirname, '../.env') });
+}
+
+// Log environment for debugging
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? 'Set' : 'Not set');
+console.log('SUPABASE_KEY:', process.env.SUPABASE_KEY ? 'Set' : 'Not set');
 
 const express = require('express');
 const cors = require('cors');

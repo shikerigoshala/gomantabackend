@@ -1,9 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const PRESET_AMOUNTS = [
-  365, 730, 1095, 1460, 1825, 2190, 2555, 2920, 3285, 3650
-];
+// Calculate preset amounts based on daily rate of ₹1 for 1-10 years
+const PRESET_AMOUNTS = Array.from({ length: 10 }, (_, i) => (i + 1) * 365);
+
+// Format amount to Indian Rupees without decimal places
+const formatAmount = (amount) => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(amount);
+};
 
 const IndividualDonationAmountSelector = () => {
   const [selectedAmount, setSelectedAmount] = useState(null);
@@ -16,23 +25,28 @@ const IndividualDonationAmountSelector = () => {
   };
 
   const handleCustomAmountChange = (e) => {
-    const value = e.target.value.replace(/[^0-9]/g, '');
+    // Remove all non-digit characters and leading zeros
+    let value = e.target.value.replace(/\D/g, '');
+    // Convert to number to remove leading zeros
+    value = value === '' ? '' : parseInt(value, 10).toString();
     setCustomAmount(value);
     setSelectedAmount(null);
   };
 
   const handleContinue = () => {
-    const finalAmount = selectedAmount || parseInt(customAmount);
+    const finalAmount = selectedAmount || parseInt(customAmount, 10);
     
-    if (!finalAmount || finalAmount < 365) {
-      alert('Please select a valid donation amount (minimum ₹365)');
+    if (!finalAmount || isNaN(finalAmount) || finalAmount < 365) {
+      alert('Please enter a valid donation amount (minimum ₹365)');
       return;
     }
 
     // Navigate to donation form with selected amount
     navigate('/donate/individual', { 
       state: { 
-        donationAmount: finalAmount 
+        donationAmount: finalAmount,
+        donationType: 'Individual Donation',
+        description: `Donation of ${formatAmount(finalAmount)}`
       } 
     });
   };
@@ -59,6 +73,8 @@ const IndividualDonationAmountSelector = () => {
               value={customAmount}
               onChange={handleCustomAmountChange}
               placeholder="Enter amount"
+              inputMode="numeric"
+              pattern="[0-9]*"
               className="pl-8 block w-full rounded-lg border border-gray-300 py-2 px-4 
                 focus:ring-emerald-500 focus:border-emerald-500"
             />
@@ -76,7 +92,7 @@ const IndividualDonationAmountSelector = () => {
                   ? 'bg-emerald-500 text-white' 
                   : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'}`}
             >
-              ₹{amount.toLocaleString()}
+              {formatAmount(amount)}
             </button>
           ))}
         </div>
