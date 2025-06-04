@@ -141,6 +141,7 @@ const FamilyRegistrationModal = ({ isOpen, onClose, onRegisterSuccess }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-API-Key': config.api.apiKey // Add API key to headers
         },
         body: JSON.stringify(registrationData)
       });
