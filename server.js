@@ -1,23 +1,44 @@
 const path = require('path');
 const fs = require('fs');
+require('dotenv').config(); // Load .env file first as fallback
 
 // Determine environment
 const envPath = process.env.NODE_ENV === 'production' 
   ? path.join(__dirname, '../.env.production')
   : path.join(__dirname, '../.env');
 
-// Check if the environment file exists
+// Check if the environment file exists and load it
 if (fs.existsSync(envPath)) {
-  require('dotenv').config({ path: envPath });
+  require('dotenv').config({ path: envPath, override: true });
   console.log(`Loaded environment variables from ${envPath}`);
 } else {
   console.warn(`Warning: Environment file not found at ${envPath}`);
-  // Fallback to default .env
-  require('dotenv').config({ path: path.join(__dirname, '../.env') });
 }
 
-// Enhanced environment variable logging
+// Verify required environment variables
+const requiredVars = [
+  'SUPABASE_URL',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'JWT_SECRET',
+  'FRONTEND_URL'
+];
+
+const missingVars = requiredVars.filter(varName => !process.env[varName]);
+
+if (missingVars.length > 0) {
+  console.error('\n❌ ERROR: Missing required environment variables:');
+  missingVars.forEach(varName => console.error(`- ${varName}`));
+  console.log('\nCurrent environment variables:', JSON.stringify(process.env, null, 2));
+  process.exit(1);
+}
+
+// Enhanced environment variable logging (mask sensitive values)
 console.log('\n=== Environment Configuration ===');
+console.log(`NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+console.log(`SUPABASE_URL: ${process.env.SUPABASE_URL ? '✅ Set' : '❌ Missing'}`);
+console.log(`JWT_SECRET: ${process.env.JWT_SECRET ? '✅ Set' : '❌ Missing'}`);
+console.log(`FRONTEND_URL: ${process.env.FRONTEND_URL || '❌ Missing'}`);
+console.log('=================================\n');
 console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('Environment file loaded from:', envPath);
 console.log('\nSupabase Configuration:');
@@ -48,17 +69,73 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
-// Configure CORS (allow all origins to avoid function crashes)
+// Configure CORS
+const allowedOrigins = [
+  'https://donate.gomantakgausevak.com', // Production frontend
+  'http://localhost:3000',               // Local development
+  'http://127.0.0.1:3000',               // Local development alternative
+  'http://localhost:3001',               // Local API
+  'http://127.0.0.1:3001'                // Local API alternative
+];
+
 const corsOptions = {
-  origin: true, // reflect request origin
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if the origin is in the allowed list
+    if (allowedOrigins.includes(origin) || 
+        process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    
+    // For production, only allow the production frontend
+    if (process.env.NODE_ENV === 'production' && 
+        origin === process.env.FRONTEND_URL) {
+      return callback(null, true);
+    }
+    
+    callback(new Error(`CORS not allowed for origin: ${origin}`));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'X-Auth-Token',
+    'X-API-Key'
+  ],
+  exposedHeaders: [
+    'Content-Range',
+    'X-Total-Count',
+    'Link'
+  ],
+  maxAge: 86400, // 24 hours
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 };
+
+// Enable CORS for all routes
 app.use(cors(corsOptions));
 
 // Handle preflight requests
 app.options('*', cors(corsOptions));
+
+// Log CORS errors
+app.use((err, req, res, next) => {
+  if (err.message.includes('CORS')) {
+    console.error('CORS Error:', err.message);
+    return res.status(403).json({
+      success: false,
+      message: 'CORS Error: Not allowed by CORS',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
+  next(err);
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {
