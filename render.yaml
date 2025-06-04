@@ -4,23 +4,54 @@ services:
     env: node
     region: singapore
     plan: free
+    
+    # Build command
     buildCommand: |
-      # Navigate to server directory and install dependencies
-      cd /opt/render/project/server
-      npm install --production
+      # Set environment
+      export NODE_ENV=production
       
-      # Copy server files to root
-      cp -r * .. 2>/dev/null || :
+      # Install dependencies
+      echo "Installing root dependencies..."
+      npm install
+      
+      echo "Installing server dependencies..."
+      cd server
+      npm install --production
       cd ..
+      
+      # Build the React app
+      echo "Building React app..."
+      npm run build
       
       # Ensure .env exists
       touch .env
-    startCommand: node server.js
+      
+      # Move build files to the correct location
+      if [ -d "build" ]; then
+        echo "Moving build files..."
+        mv build/* .
+        mv build/.* . 2>/dev/null || true
+        rmdir build
+      fi
+      
+    # Start command
+    startCommand: node server/server.js
+    
+    # Health check configuration
+    healthCheckPath: /health
+    
+    # Auto-stop configuration for free plan
+    autoDeploy: true
+    autoStop: true
+    
+    # Environment variables
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
+      - key: NODE_VERSION
+        value: 18.x
       - key: FRONTEND_URL
         value: https://donate.gomantakgausevak.com
       - key: PHONEPE_MERCHANT_ID
