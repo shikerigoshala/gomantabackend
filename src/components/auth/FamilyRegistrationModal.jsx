@@ -141,6 +141,13 @@ const FamilyRegistrationModal = ({ isOpen, onClose, onRegisterSuccess }) => {
         throw new Error('API key is not configured. Please check your configuration.');
       }
 
+      // Debug: Log the API key being used
+      console.log('🔑 Using API key:', {
+        key: apiKey ? `${apiKey.substring(0, 5)}...${apiKey.substring(apiKey.length - 3)}` : 'MISSING',
+        fromConfig: config.api.apiKey ? '✅ Found in config' : '❌ Missing in config',
+        length: apiKey ? apiKey.length : 0
+      });
+
       const requestOptions = {
         method: 'POST',
         headers: {
@@ -158,12 +165,17 @@ const FamilyRegistrationModal = ({ isOpen, onClose, onRegisterSuccess }) => {
         method: 'POST',
         headers: {
           ...requestOptions.headers,
-          'x-api-key': `${apiKey.substring(0, 5)}...${apiKey.substring(apiKey.length - 3)}`
+          'x-api-key': apiKey ? `${apiKey.substring(0, 5)}...${apiKey.substring(apiKey.length - 3)}` : 'MISSING'
         },
         body: {
           ...registrationData,
           password: '••••••••',
-          confirmPassword: '••••••••'
+          confirmPassword: '••••••••',
+          _debug: {
+            apiUrl: config.api.baseUrl,
+            endpoint: config.api.endpoints.registerFamily,
+            fullUrl: `${config.api.baseUrl}${config.api.endpoints.registerFamily}`
+          }
         }
       });
       
