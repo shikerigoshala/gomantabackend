@@ -71,15 +71,35 @@ app.use('/api/donations', donationRoutes);
 
 // In production, serve the React frontend
 if (process.env.NODE_ENV === 'production') {
-  // Serve static files from the React build directory
-  app.use(express.static(path.join(__dirname, '../build')));
+  // Serve static files from the build/public directory
+  app.use(express.static(path.join(__dirname, '../build/public'), {
+    index: false, // Don't serve index.html for directories
+    maxAge: '1y', // Cache static assets for 1 year
+  }));
 
-  // For any route not handled by the API, serve the React app
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../build', 'index.html'));
+  // API routes should be defined before the catch-all route
+  app.use('/api', (req, res, next) => {
+    // If we get here, the API route wasn't found
+    res.status(404).json({ 
+      success: false, 
+      message: 'API endpoint not found' 
+    });
   });
 
-  console.log('Running in production mode, serving frontend files');
+  // For any other GET request, serve the React app
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../build/public/index.html'));
+  });
+
+  console.log('Running in production mode, serving frontend files from build/public');
+} else {
+  // In development, just log 404 for API routes
+  app.use('/api', (req, res) => {
+    res.status(404).json({ 
+      success: false, 
+      message: 'API endpoint not found' 
+    });
+  });
 }
 
 const PORT = process.env.PORT || 3001;
