@@ -9,21 +9,19 @@ services:
       curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
       sudo apt-get install -y nodejs
       
-      # Install dependencies
+      # Install all dependencies
       cd /opt/render/project
-      npm install -g npm@latest
-      
-      # Install server dependencies
-      cd server
       npm install --production
       
-      # Move server files to root
-      cp -r * ..
-      cp -r .* .. 2>/dev/null || :
+      # Create necessary directories
+      mkdir -p server
       
-      # Install production dependencies in root
-      cd ..
-      npm install --production
+      # Copy server files
+      cp -r server/* . 2>/dev/null || :
+      cp -r server/.* . 2>/dev/null || :
+      
+      # Ensure .env exists
+      touch .env
     startCommand: node server.js
     envVars:
       - key: NODE_ENV
