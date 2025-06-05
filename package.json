@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "git submodule update --init --recursive && cd server && npm install",
-    "start": "cd server && npm start"
+    "start": "cd server && npm start",
+    "postinstall": "cd server && npm install"
   }
 }
