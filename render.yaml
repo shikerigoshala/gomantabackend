@@ -1,33 +1,10 @@
 services:
   - type: web
-<<<<<<< HEAD
-    name: donation-app-api
-=======
     name: gomata-donation-app
->>>>>>> 711a1b8b1ec2ca9e8bffac396c8c72d1093f12d3
     env: node
     region: singapore
     plan: free
     buildCommand: |
-<<<<<<< HEAD
-      npm install
-      cd server && npm install
-      npm run build:render
-    startCommand: node server.js
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PHONEPE_MERCHANT_ID
-        sync: false
-      - key: PHONEPE_CLIENT_SECRET
-        sync: false
-      - key: PHONEPE_SALT_INDEX
-        value: "1"
-      - key: REDIRECT_URL
-        value: "https://donate.gomantakgausevak.comhttps://gomantabackend.onrender.com/api/donations/payment-status"
-      - key: CALLBACK_URL
-        value: "https://donate.gomantakgausevak.comhttps://gomantabackend.onrender.com/api/donations/callback"
-=======
       echo "🚀 Starting build process..."
       
       # Set environment
@@ -105,8 +82,8 @@ services:
         value: false
     
     # Auto-deploy from Git
-    repo: https://github.com/yourusername/gomata-donation-app
-    branch: main
+    repo: https://github.com/shikerigoshala/gomantabackend
+    branch: master
     
     # Database configuration (if using Render's managed database)
     databases:
@@ -118,4 +95,3 @@ services:
     customDomains:
       - name: donate.gomantakgausevak.com
         domain: donate.gomantakgausevak.com
->>>>>>> 711a1b8b1ec2ca9e8bffac396c8c72d1093f12d3
