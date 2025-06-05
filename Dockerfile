@@ -9,7 +9,7 @@ COPY . .
 
 # Build frontend
 WORKDIR /app/src
-RUN npm ci && npm run build
+RUN npm install && npm run build
 
 # Move frontend build to server
 RUN rm -rf /app/server/public
