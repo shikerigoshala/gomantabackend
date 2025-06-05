@@ -499,7 +499,7 @@ if (process.env.NODE_ENV === 'production') {
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'X-API-Key', 'X-Requested-With', 'Accept'],
     exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar']
   };
   
