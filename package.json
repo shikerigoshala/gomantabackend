@@ -2,12 +2,8 @@
   "name": "donation-app",
   "version": "0.1.0",
   "private": true,
-  "workspaces": [
-    "server",
-    "src"
-  ],
   "scripts": {
-    "build": "git submodule update --init --recursive && cd server && npm ci",
+    "build": "git submodule update --init --recursive && cd server && npm install",
     "start": "cd server && npm start"
   }
 }
