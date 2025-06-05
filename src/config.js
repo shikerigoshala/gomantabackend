@@ -1,8 +1,40 @@
 // Configuration for the application
+<<<<<<< HEAD
 const config = {
   api: {
     // Use environment variable if available, otherwise use production URL
     baseUrl: process.env.REACT_APP_API_URL || 'https://gomantabackend.onrender.com/api',
+=======
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Validate required environment variables
+const validateConfig = () => {
+  const requiredVars = ['REACT_APP_API_KEY'];
+  const missing = requiredVars.filter(v => !process.env[v]);
+  
+  if (missing.length > 0) {
+    console.error('❌ Missing required environment variables:', missing.join(', '));
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+};
+
+// Only validate in production
+if (isProduction) {
+  validateConfig();
+}
+
+const config = {
+  api: {
+    // In production, always use the production URL
+    // In development, use REACT_APP_API_URL if set, otherwise default to localhost
+    baseUrl: isProduction 
+      ? 'https://gomantabackend.onrender.com/api'
+      : process.env.REACT_APP_API_URL || 'http://localhost:3001/api',
+    
+    // API Key for authentication with the backend
+    // Use Supabase anon key as the API key for consistency
+    apiKey: process.env.REACT_APP_SUPABASE_ANON_KEY || 'test-api-key-dev',
+>>>>>>> 711a1b8b1ec2ca9e8bffac396c8c72d1093f12d3
     
     // API endpoints
     endpoints: {
@@ -14,4 +46,14 @@ const config = {
   }
 };
 
+<<<<<<< HEAD
+=======
+// Log the API configuration for debugging
+console.log('API Configuration:', {
+  nodeEnv: process.env.NODE_ENV,
+  apiBaseUrl: config.api.baseUrl,
+  isProduction: isProduction
+});
+
+>>>>>>> 711a1b8b1ec2ca9e8bffac396c8c72d1093f12d3
 export default config;

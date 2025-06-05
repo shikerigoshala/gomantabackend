@@ -1,5 +1,6 @@
 const { getRazorpay, currency, webhook_secret } = require('../config/razorpay');
 const crypto = require('crypto');
+<<<<<<< HEAD
 
 async function createOrder(amount, donationId, notes = {}) {
   // Ensure amount is in paise (multiply by 100 if it's not already in paise)
@@ -11,6 +12,15 @@ async function createOrder(amount, donationId, notes = {}) {
     amountInPaise,
     donationId 
   });
+=======
+const { donationService } = require('./supabase');
+
+async function createOrder(amount, donationId, notes = {}) {
+  // Ensure amount is in paise (multiply by 100 if it's not already)
+  const amountInPaise = typeof amount === 'number' && amount < 100 ? Math.round(amount * 100) : amount;
+  
+  console.log('Creating Razorpay order:', { amountInPaise, donationId });
+>>>>>>> 711a1b8b1ec2ca9e8bffac396c8c72d1093f12d3
   
   const options = {
     amount: amountInPaise,

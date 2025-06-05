@@ -1,10 +1,15 @@
 services:
   - type: web
+<<<<<<< HEAD
     name: donation-app-api
+=======
+    name: gomata-donation-app
+>>>>>>> 711a1b8b1ec2ca9e8bffac396c8c72d1093f12d3
     env: node
     region: singapore
     plan: free
     buildCommand: |
+<<<<<<< HEAD
       npm install
       cd server && npm install
       npm run build:render
@@ -22,3 +27,95 @@ services:
         value: "https://donate.gomantakgausevak.comhttps://gomantabackend.onrender.com/api/donations/payment-status"
       - key: CALLBACK_URL
         value: "https://donate.gomantakgausevak.comhttps://gomantabackend.onrender.com/api/donations/callback"
+=======
+      echo "🚀 Starting build process..."
+      
+      # Set environment
+      export NODE_ENV=production
+      export NPM_CONFIG_PRODUCTION=false
+      export NPM_CONFIG_LOGLEVEL=error
+      
+      # Install dependencies with cache
+      echo "📦 Installing dependencies..."
+      npm ci --prefer-offline --no-audit --progress=false
+      
+      # Build the React app
+      echo "🔨 Building React application..."
+      npm run build
+      
+      # Install production dependencies for server
+      echo "🛠️  Installing server dependencies..."
+      cd server
+      npm ci --only=production --prefer-offline --no-audit --progress=false
+      cd ..
+      
+      echo "✅ Build completed successfully"
+    
+    # Start command
+    startCommand: npm run start:prod
+    
+    # Health check configuration
+    healthCheckPath: /api/health
+    
+    # Auto-stop configuration for free plan
+    autoDeploy: true
+    autoStop: true
+    
+    # Environment variables
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=4096
+      - key: PORT
+        value: 10000
+      - key: FRONTEND_URL
+        value: https://donate.gomantakgausevak.com
+      - key: ALLOWED_ORIGINS
+        value: https://donate.gomantakgausevak.com,https://www.donate.gomantakgausevak.com
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SUPABASE_URL
+        fromService:
+          name: gomata-supabase
+          type: postgres
+          property: connectionString
+      - key: SUPABASE_ANON_KEY
+        fromService:
+          name: gomata-supabase
+          type: postgres
+          property: connection.anonKey
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        fromService:
+          name: gomata-supabase
+          type: postgres
+          property: connection.serviceRoleKey
+      - key: API_KEY
+        generateValue: true
+      - key: LOG_LEVEL
+        value: info
+    
+    # Build environment variables
+    buildEnvVars:
+      - key: NODE_ENV
+        value: production
+      - key: NPM_CONFIG_PRODUCTION
+        value: false
+      - key: CI
+        value: false
+    
+    # Auto-deploy from Git
+    repo: https://github.com/yourusername/gomata-donation-app
+    branch: main
+    
+    # Database configuration (if using Render's managed database)
+    databases:
+      - name: gomata-supabase
+        databaseName: gomata_donation
+        user: gomata_user
+    
+    # Custom domains (if configured in Render)
+    customDomains:
+      - name: donate.gomantakgausevak.com
+        domain: donate.gomantakgausevak.com
+>>>>>>> 711a1b8b1ec2ca9e8bffac396c8c72d1093f12d3

@@ -66,6 +66,20 @@ const DonationFormBase = ({ title, amount, donationType, description, onSubmit, 
     }
   };
 
+<<<<<<< HEAD
+=======
+  // Calculate next year's date in DD-MM-YYYY format (fixed to exactly one year from today)
+  const getNextYearDate = () => {
+    const today = new Date();
+    const nextYear = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
+    // Format as DD-MM-YYYY
+    const day = String(nextYear.getDate()).padStart(2, '0');
+    const month = String(nextYear.getMonth() + 1).padStart(2, '0');
+    const year = nextYear.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
+>>>>>>> 711a1b8b1ec2ca9e8bffac396c8c72d1093f12d3
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -81,6 +95,10 @@ const DonationFormBase = ({ title, amount, donationType, description, onSubmit, 
     incomeTaxRebate: 'no',
     agreeToTerms: false,
     wants80GTaxBenefit: false,
+<<<<<<< HEAD
+=======
+    nextDonationDate: getNextYearDate(),
+>>>>>>> 711a1b8b1ec2ca9e8bffac396c8c72d1093f12d3
     familyMembers: allowFamilyMembers || donationType === 'Family Group Donation' ? [{ name: 'Primary Member', age: '', relation: 'Self' }] : [],
     ...additionalFields.reduce((acc, field) => ({ ...acc, [field.name]: field.value !== undefined ? field.value : '' }), {})
   });
@@ -121,19 +139,30 @@ const DonationFormBase = ({ title, amount, donationType, description, onSubmit, 
     // For Family Group Donation, use the calculated amount from formData if available
     if (donationType === 'Family Group Donation') {
       if (formData.calculatedAmount) {
+<<<<<<< HEAD
         return parseInt(formData.calculatedAmount) / 100; // Convert paise to rupees
+=======
+        return parseInt(formData.calculatedAmount);
+>>>>>>> 711a1b8b1ec2ca9e8bffac396c8c72d1093f12d3
       }
       // Default to 1 member if no members added yet
       return 365; // ₹365 for 1 member
     }
     // For other non-Individual donations, use fixed amount if available
     if (donationType !== 'Individual Donation') {
+<<<<<<< HEAD
       const fixedAmount = FIXED_AMOUNTS[donationType] || 0;
       return fixedAmount >= 1000 ? fixedAmount / 100 : fixedAmount; // Convert paise to rupees if needed
     }
     // For Individual donations, use selected or custom amount
     const amount = selectedAmount || (customAmount ? parseInt(customAmount) : 0);
     return amount >= 1000 ? amount / 100 : amount; // Convert paise to rupees if needed
+=======
+      return FIXED_AMOUNTS[donationType] || 0;
+    }
+    // For Individual donations, use selected or custom amount
+    return selectedAmount || (customAmount ? parseInt(customAmount) : 0);
+>>>>>>> 711a1b8b1ec2ca9e8bffac396c8c72d1093f12d3
   };
   
   // Update form data when family members change
@@ -209,11 +238,26 @@ const DonationFormBase = ({ title, amount, donationType, description, onSubmit, 
         return;
       }
 
+<<<<<<< HEAD
+=======
+      // Format the next donation date for display
+      const formatDateForDisplay = (dateString) => {
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString('en-IN', options);
+      };
+
+>>>>>>> 711a1b8b1ec2ca9e8bffac396c8c72d1093f12d3
       // Prepare form data for submission
       const submissionData = {
         ...formData,
         amount: finalAmount,
+<<<<<<< HEAD
         donationType
+=======
+        donationType,
+        nextDonationDate: formData.nextDonationDate,
+        nextDonationDateFormatted: formatDateForDisplay(formData.nextDonationDate)
+>>>>>>> 711a1b8b1ec2ca9e8bffac396c8c72d1093f12d3
       };
 
       // Pass data to parent component's onSubmit handler
@@ -1232,7 +1276,16 @@ const DonationFormBase = ({ title, amount, donationType, description, onSubmit, 
               <div className="flex justify-between items-center py-2">
                 <span className="text-gray-600">Donation Amount</span>
                 <span className="font-medium">
+<<<<<<< HEAD
                   ₹{getDonationAmount().toLocaleString()}
+=======
+                  {new Intl.NumberFormat('en-IN', {
+                    style: 'currency',
+                    currency: 'INR',
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                  }).format(getDonationAmount())}
+>>>>>>> 711a1b8b1ec2ca9e8bffac396c8c72d1093f12d3
                 </span>
               </div>
 
@@ -1241,10 +1294,32 @@ const DonationFormBase = ({ title, amount, donationType, description, onSubmit, 
                 <span className="font-medium">{frequency || 'Yearly'}</span>
               </div>
 
+<<<<<<< HEAD
               <div className="flex justify-between items-center py-2 border-t border-gray-200 mt-2">
                 <span className="text-gray-800 font-medium">Donation Total</span>
                 <span className="text-gray-800 font-bold">
                   ₹{getDonationAmount().toLocaleString()}
+=======
+              <div className="flex justify-between items-center py-2">
+                <span className="text-gray-600">Next Donation Date</span>
+                <span className="font-medium">{formData.nextDonationDate}</span>
+                <input
+                  type="hidden"
+                  name="nextDonationDate"
+                  value={formData.nextDonationDate}
+                />
+              </div>
+
+              <div className="flex justify-between items-center py-2 border-t border-gray-200 mt-2">
+                <span className="text-gray-800 font-medium">Donation Total</span>
+                <span className="text-gray-800 font-bold">
+                  {new Intl.NumberFormat('en-IN', {
+                    style: 'currency',
+                    currency: 'INR',
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                  }).format(getDonationAmount())}
+>>>>>>> 711a1b8b1ec2ca9e8bffac396c8c72d1093f12d3
                 </span>
               </div>
             </div>
