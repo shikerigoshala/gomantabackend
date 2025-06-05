@@ -3,12 +3,12 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 // Validate required environment variables
 const validateConfig = () => {
-  const requiredVars = ['REACT_APP_API_KEY'];
-  const missing = requiredVars.filter(v => !process.env[v]);
+  // Check if we have either API key
+  const hasApiKey = process.env.REACT_APP_API_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
   
-  if (missing.length > 0) {
-    console.error('❌ Missing required environment variables:', missing.join(', '));
-    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  if (!hasApiKey) {
+    console.error('❌ Missing required environment variable: REACT_APP_API_KEY or REACT_APP_SUPABASE_ANON_KEY');
+    throw new Error('Missing required environment variable: API key not found');
   }
 };
 
@@ -27,7 +27,7 @@ const config = {
     
     // API Key for authentication with the backend
     // Use Supabase anon key as the API key for consistency
-    apiKey: process.env.REACT_APP_SUPABASE_ANON_KEY || 'test-api-key-dev',
+    apiKey: process.env.REACT_APP_API_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY || (isProduction ? undefined : 'test-api-key-dev'),
     
     // API endpoints
     endpoints: {
@@ -40,10 +40,21 @@ const config = {
 };
 
 // Log the API configuration for debugging
+const logSafeKey = (key) => {
+  if (!key || typeof key !== 'string') return 'not-set';
+  const length = key.length;
+  if (length <= 8) return '***';
+  return `${key.substring(0, 3)}...${key.substring(length - 3)} (${length} chars)`;
+};
+
 console.log('API Configuration:', {
   nodeEnv: process.env.NODE_ENV,
   apiBaseUrl: config.api.baseUrl,
-  isProduction: isProduction
+  isProduction: isProduction,
+  apiKeySource: process.env.REACT_APP_API_KEY ? 'REACT_APP_API_KEY' 
+    : process.env.REACT_APP_SUPABASE_ANON_KEY ? 'REACT_APP_SUPABASE_ANON_KEY' 
+    : 'test-api-key-dev',
+  apiKey: logSafeKey(config.api.apiKey)
 });
 
 export default config;
