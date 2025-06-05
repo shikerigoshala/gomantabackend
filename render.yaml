@@ -80,9 +80,11 @@ services:
         value: false
       - key: CI
         value: false
+      - key: NODE_VERSION
+        value: 18
     
     # Auto-deploy from Git
-    repo: https://github.com/yourusername/gomata-donation-app
+    repo: https://github.com/shikerigoshala/gomantabackend.git
     branch: main
     
     # Database configuration (if using Render's managed database)
