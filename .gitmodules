@@ -2,5 +2,5 @@
 	path = server
 	url = https://github.com/shikerigoshala/gomantabackend.git
 	branch = main
-	commit = 2d8d3bf
+	commit = 8724ca2
 	subdir = server/server
