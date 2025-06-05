@@ -5,5 +5,9 @@
   "workspaces": [
     "server",
     "src"
-  ]
+  ],
+  "scripts": {
+    "build": "cd server && npm install",
+    "start": "cd server && node --experimental-modules server.js"
+  }
 }
