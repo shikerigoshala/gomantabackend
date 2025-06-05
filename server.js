@@ -13,27 +13,16 @@ import authRoutes from './routes/auth.routes.js';
 import donationsRoutes from './routes/donations.routes.js';
 import { supabase, supabaseAdmin } from './config/supabase.js';
 
-// Load environment variables with priority:
-// 1. Platform environment variables (highest priority)
-// 2. .env.production (for production)
-// 3. .env (for development, lowest priority)
+// Load environment variables
+// Note: In production (Render), environment variables should be set through the platform
 console.log('Initializing environment...');
 
-// Load default .env first if it exists
-const envPath = new URL('../.env', import.meta.url);
-if (fs.existsSync(envPath.pathname)) {
-  dotenv.config({ path: envPath.pathname });
-  console.log('Loaded environment variables from .env');
-}
-
-// In production, override with .env.production if it exists
-if (process.env.NODE_ENV === 'production') {
-  const prodEnvPath = new URL('../.env.production', import.meta.url);
-  if (fs.existsSync(prodEnvPath.pathname)) {
-    dotenv.config({ path: prodEnvPath.pathname, override: true });
-    console.log('Loaded environment variables from .env.production');
-  } else {
-    console.warn('⚠️ Production environment file (.env.production) not found');
+// Load .env for local development only
+if (process.env.NODE_ENV !== 'production') {
+  const envPath = new URL('../.env', import.meta.url);
+  if (fs.existsSync(envPath.pathname)) {
+    dotenv.config({ path: envPath.pathname });
+    console.log('Loaded environment variables from .env');
   }
 }
 

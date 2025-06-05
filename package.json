@@ -4,17 +4,36 @@
   "description": "Backend server for donation application",
   "type": "module",
   "main": "server.js",
+  "scripts": {
+    "start": "node --experimental-modules server.js",
+    "dev": "nodemon --experimental-modules server.js"
+  },
   "engines": {
     "node": "18"
   },
-  "scripts": {
-    "start": "node --experimental-modules server.js",
-    "start:prod": "NODE_ENV=production node --max-old-space-size=2048 server/server.js",
-    "dev": "nodemon --experimental-modules server.js",
-    "build": "npm install",
-    "build:render": "node render-build.js",
-    "heroku-prebuild": "echo This runs before build on Heroku",
-    "heroku-postbuild": "cd server && npm install --production --prefer-offline"
+  "required": {
+    "env": {
+      "SUPABASE_URL": {
+        "description": "Supabase database URL",
+        "required": true
+      },
+      "SUPABASE_ANON_KEY": {
+        "description": "Supabase anonymous key",
+        "required": true
+      },
+      "SUPABASE_SERVICE_ROLE_KEY": {
+        "description": "Supabase service role key",
+        "required": true
+      },
+      "JWT_SECRET": {
+        "description": "JWT secret for token signing",
+        "required": true
+      },
+      "FRONTEND_URL": {
+        "description": "Frontend application URL",
+        "required": true
+      }
+    }
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
