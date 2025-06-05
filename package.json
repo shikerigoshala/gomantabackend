@@ -7,7 +7,7 @@
     "src"
   ],
   "scripts": {
-    "build": "cd server && npm install",
-    "start": "cd server && node --experimental-modules server.js"
+    "build": "chmod +x deploy.sh && ./deploy.sh",
+    "start": "node --experimental-modules server.js"
   }
 }
