@@ -1,5 +1,0 @@
-[submodule "server"]
-	path = server
-	url = https://github.com/shikerigoshala/gomantabackend.git
-	branch = main
-	commit = f3f8ddf819416d16eb958d3965667bfcf1850e25
