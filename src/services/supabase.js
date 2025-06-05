@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
 
 // Load environment variables
-require('dotenv').config({ path: '../../.env' });
+dotenv.config({ path: new URL('../../.env', import.meta.url).pathname });
 
 // Get required configuration from environment variables
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -41,56 +42,72 @@ console.log('✅ Supabase client initialized successfully');
 // Donation service
 export const donationService = {
   // Get all donations for the current user
-  async getUserDonations() {
+  async getUserDonations(userId) {
     try {
       const { data, error } = await supabase
         .from('donations')
         .select('*')
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data || [];
+      return data;
     } catch (error) {
-      console.error('Error fetching donations:', error);
-      return [];
+      console.error('Error getting user donations:', error);
+      throw error;
     }
   },
 
   // Get donation by ID
   async getDonationById(id) {
-    const { data, error } = await supabase
-      .from('donations')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (error) throw error;
-    return data;
+    try {
+      const { data, error } = await supabase
+        .from('donations')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error getting donation by ID:', error);
+      throw error;
+    }
   },
 
   // Create a new donation
   async createDonation(donationData) {
-    const { data, error } = await supabase
-      .from('donations')
-      .insert([donationData])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
+    try {
+      const { data, error } = await supabase
+        .from('donations')
+        .insert([donationData])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating donation:', error);
+      throw error;
+    }
   },
 
   // Update donation
   async updateDonation(id, updates) {
-    const { data, error } = await supabase
-      .from('donations')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
+    try {
+      const { data, error } = await supabase
+        .from('donations')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating donation:', error);
+      throw error;
+    }
   }
 };
 
@@ -113,24 +130,70 @@ export const userService = {
   
   // Get user by email
   async getUserByEmail(email) {
-    if (!email) return null;
-    
     try {
       const { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('email', email.toLowerCase())
-        .maybeSingle();
+        .eq('email', email)
+        .single();
       
-      if (error) {
-        console.error('Error fetching user by email:', error);
-        return null;
-      }
-      
+      if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Exception in getUserByEmail:', error);
-      return null;
+      console.error('Error getting user by email:', error);
+      throw error;
+    }
+  },
+
+  // Create new user
+  async createUser(userData) {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .insert([userData])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
+    }
+  },
+
+  // Get user by ID
+  async getUserById(userId) {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error getting user by ID:', error);
+      throw error;
+    }
+  },
+
+  // Update user
+  async updateUser(userId, updates) {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update(updates)
+        .eq('id', userId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating user:', error);
+      throw error;
     }
   },
 

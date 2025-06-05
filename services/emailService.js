@@ -1,4 +1,4 @@
-const nodemailer = require('nodemailer');
+import nodemailer from 'nodemailer';
 
 // Create a test account if in development
 let transporter;
@@ -54,9 +54,7 @@ if (process.env.NODE_ENV === 'production') {
  * @param {string} [options.userId] - User ID
  * @param {string} [template='welcome'] - Email template type
  */
-const sendWelcomeEmail = async (options) => {
-  const { to, name, email, password, userId, amount, template = 'welcome' } = options;
-  
+export const sendWelcomeEmail = async ({ to, name, email, password, userId, amount, template = 'welcome' }) => {
   // Validate required fields
   if (!to || !name || !email || !password) {
     throw new Error('Missing required email parameters');

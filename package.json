@@ -2,18 +2,19 @@
   "name": "donation-app-server",
   "version": "1.0.0",
   "description": "Backend server for donation application",
+  "type": "module",
   "main": "server.js",
   "engines": {
     "node": "18"
   },
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "node --experimental-modules server.js",
+    "start:prod": "NODE_ENV=production node --max-old-space-size=2048 server/server.js",
+    "dev": "nodemon --experimental-modules server.js",
     "build": "npm install",
     "build:render": "node render-build.js",
     "heroku-prebuild": "echo This runs before build on Heroku",
-    "heroku-postbuild": "cd server && npm install --production --prefer-offline",
-    "start:prod": "NODE_ENV=production node --max-old-space-size=2048 server/server.js"
+    "heroku-postbuild": "cd server && npm install --production --prefer-offline"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

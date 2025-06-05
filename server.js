@@ -1,14 +1,17 @@
-// Import dependencies
-const path = require('path');
-const fs = require('fs');
-const dotenv = require('dotenv');
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const compression = require('compression');
-const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
-const cookieParser = require('cookie-parser');
+import path from 'path';
+import fs from 'fs';
+import dotenv from 'dotenv';
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
+import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
+import healthRoutes from './routes/health.routes.js';
+import authRoutes from './routes/auth.routes.js';
+import donationsRoutes from './routes/donations.routes.js';
+import { supabase, supabaseAdmin } from './config/supabase.js';
 
 // Load environment variables with priority:
 // 1. Platform environment variables (highest priority)
@@ -17,17 +20,17 @@ const cookieParser = require('cookie-parser');
 console.log('Initializing environment...');
 
 // Load default .env first if it exists
-const envPath = path.join(__dirname, '../.env');
-if (fs.existsSync(envPath)) {
-  dotenv.config({ path: envPath });
+const envPath = new URL('../.env', import.meta.url);
+if (fs.existsSync(envPath.pathname)) {
+  dotenv.config({ path: envPath.pathname });
   console.log('Loaded environment variables from .env');
 }
 
 // In production, override with .env.production if it exists
 if (process.env.NODE_ENV === 'production') {
-  const prodEnvPath = path.join(__dirname, '../.env.production');
-  if (fs.existsSync(prodEnvPath)) {
-    dotenv.config({ path: prodEnvPath, override: true });
+  const prodEnvPath = new URL('../.env.production', import.meta.url);
+  if (fs.existsSync(prodEnvPath.pathname)) {
+    dotenv.config({ path: prodEnvPath.pathname, override: true });
     console.log('Loaded environment variables from .env.production');
   } else {
     console.warn('⚠️ Production environment file (.env.production) not found');
@@ -40,18 +43,37 @@ process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 // Create Express app
 const app = express();
 
-// Import routes
-const healthRoutes = require('./routes/health.routes');
-const authRoutes = require('./routes/auth.routes');
-const donationRoutes = require('./routes/donations.routes');
+// --- CORS FIX: Allow frontend requests from localhost:3000 ---
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true
+}));
+// ------------------------------------------------------------
 
-// Import Supabase service
-const { supabase, supabaseAdmin } = require('./config/supabase');
+// --- BODY PARSER FIX: Populate req.body for JSON and forms ---
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+// ------------------------------------------------------------
+
+// Root route handler
+app.get('/', (req, res) => {
+  res.json({
+    status: 'API is running',
+    environment: process.env.NODE_ENV,
+    timestamp: new Date().toISOString(),
+    endpoints: [
+      '/api/auth/register/family',
+      '/api/auth/login',
+      '/api/health',
+      '/api/donations'
+    ]
+  });
+});
 
 // Log environment status
 console.log('\n=== Environment Status ===');
 console.log(`Node Environment: ${process.env.NODE_ENV}`);
-console.log(`PORT: ${process.env.PORT || 3001}`);
+console.log(`PORT: ${process.env.PORT || 3001}`); // This is just for logging, not declaration
 console.log(`SUPABASE_URL: ${process.env.SUPABASE_URL ? '✅ Set' : '❌ Missing'}`);
 console.log(`SUPABASE_ANON_KEY: ${process.env.SUPABASE_ANON_KEY ? '✅ Set' : '❌ Missing'}`);
 console.log(`SUPABASE_SERVICE_ROLE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅ Set' : '❌ Missing'}`);
@@ -116,7 +138,7 @@ if (process.env.NODE_ENV !== 'test') {
 // Routes
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/donations', donationRoutes);
+app.use('/api/donations', donationsRoutes);
 
 // 404 handler for API routes
 app.use('/api/*', (req, res, next) => {
@@ -178,6 +200,8 @@ process.on('uncaughtException', (err) => {
     process.exit(1);
   });
 });
+
+
 
 // Handle SIGTERM signal for graceful shutdown
 process.on('SIGTERM', () => {
@@ -363,7 +387,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/donations', donationRoutes);
+app.use('/api/donations', donationsRoutes);
 
 // 404 handler for API routes
 app.use('/api/*', (req, res, next) => {

@@ -1,8 +1,9 @@
-const express = require('express');
-const jwt = require('jsonwebtoken');
+import express from 'express';
+import jwt from 'jsonwebtoken';
+import { userService } from '../src/services/supabase.js';
+import { sendWelcomeEmail } from '../services/emailService.js';
+
 const router = express.Router();
-const { userService } = require('../services/supabase.service');
-const { sendWelcomeEmail } = require('../services/emailService');
 
 // Base register endpoint (for backward compatibility)
 router.post('/register', (req, res, next) => {
@@ -14,58 +15,27 @@ router.post('/register', (req, res, next) => {
 // Middleware to validate API key
 const validateApiKey = (req, res, next) => {
   console.log('\n🔑 ========== API Key Validation ==========');
-  
+
   // Get API key from environment variable - use Supabase anon key as the API key
   const validApiKey = process.env.SUPABASE_ANON_KEY;
   const isDev = process.env.NODE_ENV === 'development';
-  
+
+  // Get key from request
+  const apiKey = req.headers['x-api-key'];
+
+  // Log what is being compared (mask for security)
+  console.log('Expected API Key:', validApiKey ? `${validApiKey.substring(0, 5)}...${validApiKey.slice(-3)}` : 'MISSING');
+  console.log('Received API Key:', apiKey ? `${apiKey.substring(0, 5)}...${apiKey.slice(-3)}` : 'MISSING');
+
   // In development, allow a test key
   if (isDev && !validApiKey) {
     console.log('⚠️ Development mode: Using test API key');
-    if (req.headers['x-api-key'] === 'test-api-key-dev') {
+    if (apiKey === 'test-api-key-dev') {
       console.log('✅ Test API key accepted');
       return next();
     }
   }
-  
-  if (!validApiKey) {
-    console.error('❌ No API key configured in environment variables');
-    return res.status(500).json({
-      success: false,
-      message: 'Server configuration error: API_KEY not set',
-      code: 'server_error'
-    });
-  }
-  
-  // Try both header cases for maximum compatibility
-  const apiKey = req.headers['x-api-key'] || req.headers['X-API-Key'];
-  
-  // Log request details for debugging (but don't log the full keys)
-  const logSafeKey = (key) => {
-    if (!key || typeof key !== 'string') return 'invalid-key';
-    const length = key.length;
-    if (length <= 8) return '***';
-    return `${key.substring(0, 5)}...${key.substring(length - 3)} (${length} chars)`;
-  };
-  
-  console.log('🔍 Request details:', {
-    method: req.method,
-    path: req.path,
-    receivedKey: logSafeKey(apiKey),
-    expectedKeyLength: validApiKey ? validApiKey.length : 0,
-    headers: Object.keys(req.headers)
-      .filter(h => !h.toLowerCase().includes('key') && !h.toLowerCase().includes('auth'))
-      .join(', ')
-  });
 
-  // Log environment for debugging
-  console.log('🌍 Environment:', {
-    NODE_ENV: process.env.NODE_ENV,
-    API_KEY_SET: !!validApiKey,
-    API_KEY_LENGTH: validApiKey ? validApiKey.length : 0
-  });
-
-  // Validate the API key
   if (!apiKey) {
     console.error('❌ No API key provided in request');
     return res.status(401).json({ 
@@ -73,6 +43,16 @@ const validateApiKey = (req, res, next) => {
       message: 'API key is required',
       code: 'missing_api_key',
       details: 'Please include x-api-key in your request headers'
+    });
+  }
+
+  if (!validApiKey) {
+    console.error('❌ Server misconfiguration: SUPABASE_ANON_KEY is not set');
+    return res.status(500).json({
+      success: false,
+      message: 'Server configuration error: API key not set',
+      code: 'server_missing_api_key',
+      details: 'Please set SUPABASE_ANON_KEY in your environment variables.'
     });
   }
 
@@ -85,15 +65,47 @@ const validateApiKey = (req, res, next) => {
       details: 'The provided API key is not valid'
     });
   }
-  
+
   console.log('✅ API key validation successful');
   next();
 };
 
+
 // Register family user
 router.post('/register/family', validateApiKey, async (req, res) => {
   try {
-    console.log('Register family request received:', req.body);
+    // Log detailed request information
+    console.log('=== Family Registration Request Details ===');
+    console.log('Headers:', JSON.stringify(req.headers, null, 2));
+    console.log('Raw body:', JSON.stringify(req.body, null, 2));
+    console.log('Request method:', req.method);
+    console.log('Request URL:', req.url);
+    
+    // Check if body is undefined
+    if (!req.body) {
+      console.error('❌ Request body is undefined');
+      return res.status(400).json({
+        success: false,
+        message: 'No request body received',
+        details: 'Please ensure you are sending a JSON body with your request'
+      });
+    }
+
+    // Log the body type
+    console.log('Body type:', typeof req.body);
+    
+    // Check if body is empty object
+    if (Object.keys(req.body).length === 0) {
+      console.error('❌ Empty request body');
+      return res.status(400).json({
+        success: false,
+        message: 'Empty request body',
+        details: 'Please provide all required fields in the request body'
+      });
+    }
+
+    // Log raw body content
+    console.log('Raw body content:', req.body);
     
     const { firstName, lastName, email, phone, password } = req.body;
 
