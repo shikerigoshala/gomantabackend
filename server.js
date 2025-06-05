@@ -43,12 +43,10 @@ const app = express();
 // Import routes
 const healthRoutes = require('./routes/health.routes');
 const authRoutes = require('./routes/auth.routes');
-const donationRoutes = require('./routes/donation.routes');
-const profileRoutes = require('./routes/profile.routes');
-const adminRoutes = require('./routes/admin.routes');
+const donationRoutes = require('./routes/donations.routes');
 
 // Import Supabase service
-const { testConnection } = require('./config/supabase');
+const { supabase, supabaseAdmin } = require('./config/supabase');
 
 // Log environment status
 console.log('\n=== Environment Status ===');
@@ -102,23 +100,23 @@ if (missingVars.length > 0) {
   }
 }
 
-// Test Supabase connection on startup
+// Test Supabase connection
 if (process.env.NODE_ENV !== 'test') {
-  testConnection().then(success => {
-    if (!success) {
+  try {
+    if (supabase && supabaseAdmin) {
+      console.log('✅ Supabase connection verified');
+    } else {
       console.error('⚠️  Failed to connect to Supabase. Some features may not work.');
     }
-  }).catch(error => {
-    console.error('Error testing Supabase connection:', error);
-  });
+  } catch (error) {
+    console.error('❌ Failed to test Supabase connection:', error.message);
+  }
 }
 
 // Routes
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/donations', donationRoutes);
-app.use('/api/profiles', profileRoutes);
-app.use('/api/admin', adminRoutes);
 
 // 404 handler for API routes
 app.use('/api/*', (req, res, next) => {
@@ -366,8 +364,6 @@ app.get('/health', (req, res) => {
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/donations', donationRoutes);
-app.use('/api/profiles', profileRoutes);
-app.use('/api/admin', adminRoutes);
 
 // 404 handler for API routes
 app.use('/api/*', (req, res, next) => {

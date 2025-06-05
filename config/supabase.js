@@ -1,25 +1,11 @@
 const { createClient } = require('@supabase/supabase-js');
+const config = require('./config');
 
 // Initialize Supabase client with error handling
 const initializeSupabase = () => {
   try {
     console.log('Initializing Supabase clients...');
-    
-    // Get required configuration from environment variables
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    // Validate required configurations
-    const missingVars = [];
-    if (!supabaseUrl) missingVars.push('SUPABASE_URL');
-    if (!supabaseAnonKey) missingVars.push('SUPABASE_ANON_KEY');
-    if (!serviceRoleKey) missingVars.push('SUPABASE_SERVICE_ROLE_KEY');
-
-    if (missingVars.length > 0) {
-      console.error('❌ Missing required environment variables:', missingVars.join(', '));
-      throw new Error(`Missing required Supabase configuration: ${missingVars.join(', ')}`);
-    }
+    const { url: supabaseUrl, anonKey: supabaseAnonKey, serviceRoleKey } = config.supabase;
 
     // Log configuration status (safely)
     const maskKey = (key) => key ? `${key.substring(0, 3)}...${key.substring(key.length - 3)}` : 'Not set';
