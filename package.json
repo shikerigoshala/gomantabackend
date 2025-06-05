@@ -3,9 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "git submodule update --init --recursive && cd server && npm install",
-    "start": "cd server && npm start",
-    "postinstall": "cd server && npm install",
-    "prepare": "git submodule update --init --recursive"
+    "start": "node server/server.js"
   }
 }
